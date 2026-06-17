@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: 139 92 246; /* violet-500 */
+  --accent-2: 192 132 252; /* purple-400 */
+  --fuchsia: 217 70 239;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Frameless-window drag regions (no effect in the browser). */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Desktop shell: drop the purple wallpaper so only the rounded glass pane
+   shows over a transparent (see-through) window — no extra rectangular frame. */
+.is-desktop body {
+  background: transparent !important;
+}
+/* Flush the rounded pane to the window edge — no surrounding gap/frame band. */
+.is-desktop .chrono-frame {
+  padding: 0 !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* The vivid purple "wallpaper" the floating window sits on (like the template). */
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(124, 92, 255, 0.85), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(190, 75, 240, 0.7), transparent 55%),
+    linear-gradient(135deg, #5b3fbf 0%, #7c52d6 45%, #b266e6 100%);
+  color: #ece8f7;
+  font-family: Inter, system-ui, ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  /* The dark floating app window. */
+  .app-window {
+    background:
+      radial-gradient(900px 500px at 0% 0%, rgba(139, 92, 246, 0.12), transparent 60%),
+      linear-gradient(180deg, rgba(24, 18, 43, 0.985), rgba(15, 11, 28, 0.995));
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Translucent frosted surfaces (cards, inputs, panels). */
+  .glass {
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Slightly tinted rail / sidebar panel. */
+  .panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+  }
+}
+
+/* Violet scrollbar */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+  background-clip: padding-box;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* ===================== LIGHT THEME ===================== */
+/* The app is authored in white-on-dark utilities; light mode remaps the shared
+   surfaces and the most common text/border utilities to dark-on-light. */
+.light body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(196, 181, 253, 0.7), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(221, 214, 254, 0.7), transparent 55%),
+    linear-gradient(135deg, #cdbdf2 0%, #d8ccf5 45%, #ece6fb 100%);
+  color: #241a3b;
+}
+
+.light .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(139, 92, 246, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(250, 248, 255, 0.985), rgba(243, 240, 251, 0.995));
+  border: 1px solid rgba(20, 12, 40, 0.08);
+}
+.light .glass {
+  background: rgba(20, 12, 40, 0.035);
+  border: 1px solid rgba(20, 12, 40, 0.08);
+}
+.light .panel {
+  background: linear-gradient(180deg, rgba(20, 12, 40, 0.04), rgba(20, 12, 40, 0.02));
+}
+
+/* Text utility remap (most-used opacities) */
+.light .text-white\/90,
+.light .text-white\/85,
+.light .text-white\/80 { color: rgba(28, 20, 48, 0.92); }
+.light .text-white\/75,
+.light .text-white\/70,
+.light .text-white\/65 { color: rgba(28, 20, 48, 0.8); }
+.light .text-white\/60,
+.light .text-white\/55,
+.light .text-white\/50,
+.light .text-white\/45 { color: rgba(28, 20, 48, 0.6); }
+.light .text-white\/40,
+.light .text-white\/35,
+.light .text-white\/30,
+.light .text-white\/25 { color: rgba(28, 20, 48, 0.42); }
+.light .text-current { color: rgba(28, 20, 48, 0.7); }
+
+/* Borders + subtle fills */
+.light .border-white\/\[0\.06\],
+.light .border-white\/10,
+.light .border-white\/5 { border-color: rgba(20, 12, 40, 0.1); }
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.015\],
+.light .bg-white\/5 { background-color: rgba(20, 12, 40, 0.035); }
+
+.light input::placeholder { color: rgba(28, 20, 48, 0.35); }
+.light *::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); background-clip: padding-box; }
