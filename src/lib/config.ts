@@ -13,4 +13,8 @@ export const SUPABASE_ANON_KEY =
 // Fixed loopback redirect for the Electron OAuth flow. Must be added to the
 // Supabase project's "Redirect URLs" allow-list (Auth → URL Configuration).
 export const ELECTRON_REDIRECT_PORT = 53117;
+<<<<<<< HEAD
 export const ELECTRON_REDIRECT_URI = `http://127.0.0.1:${ELECTRON_REDIRECT_PORT}/auth/callback`;
+=======
+export const ELECTRON_REDIRECT_URI = `http://127.0.0.1:${ELECTRON_REDIRECT_PORT}/auth/callback`;
+>>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0

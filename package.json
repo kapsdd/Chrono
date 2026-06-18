@@ -34,11 +34,16 @@
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
+<<<<<<< HEAD
     "postcss": "^8.5.10",
+=======
+    "postcss": "^8.4.49",
+>>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2"
   },
   "build": {
+<<<<<<< HEAD
     "appId": "com.chrono.app",
     "productName": "CHRONO",
     "directories": {
@@ -69,3 +74,35 @@
     }
   }
 }
+=======
+  "appId": "com.chrono.app",
+  "productName": "CHRONO",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "electron/**/*",
+    "out/**/*",
+    "okno/icon.png",
+    "package.json",
+    "!**/node_modules/**"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "okno/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "CHRONO",
+    "installerIcon": "okno/icon.ico",
+    "uninstallerIcon": "okno/icon.ico",
+    "runAfterFinish": true,
+    "artifactName": "CHRONO-Setup-${version}.${ext}"
+  }
+}
+}
+>>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0

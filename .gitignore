@@ -15,9 +15,12 @@ next-env.d.ts
 
 # secrets — DO NOT COMMIT Discord credentials
 chrono.config.json
+<<<<<<< HEAD
 .env
 .env.local
 .env.production
+=======
+>>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0
 
 # logs
 *.log
@@ -35,4 +38,8 @@ Thumbs.db
 # misc working files — keep the app icon (build depends on it), ignore the rest
 /okno/*
 !/okno/icon.png
+<<<<<<< HEAD
 /.claude
+=======
+/.claude
+>>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0
