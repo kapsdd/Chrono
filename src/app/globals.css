@@ -1,0 +1,315 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: 139 92 246; /* violet-500 */
+  --accent-2: 192 132 252; /* purple-400 */
+  --fuchsia: 217 70 239;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Frameless-window drag regions (no effect in the browser). */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Desktop shell: drop the purple wallpaper so only the rounded glass pane
+   shows over a transparent (see-through) window — no extra rectangular frame. */
+.is-desktop body {
+  background: transparent !important;
+}
+/* Flush the rounded pane to the window edge — no surrounding gap/frame band. */
+.is-desktop .chrono-frame {
+  padding: 0 !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* The vivid purple "wallpaper" the floating window sits on (like the template). */
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(124, 92, 255, 0.85), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(190, 75, 240, 0.7), transparent 55%),
+    linear-gradient(135deg, #5b3fbf 0%, #7c52d6 45%, #b266e6 100%);
+  color: #ece8f7;
+  font-family: Inter, system-ui, ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  /* The dark floating app window. */
+  .app-window {
+    background:
+      radial-gradient(900px 500px at 0% 0%, rgba(139, 92, 246, 0.12), transparent 60%),
+      linear-gradient(180deg, rgba(24, 18, 43, 0.985), rgba(15, 11, 28, 0.995));
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Translucent frosted surfaces (cards, inputs, panels). */
+  .glass {
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Slightly tinted rail / sidebar panel. */
+  .panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+  }
+}
+
+/* Violet scrollbar */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+  background-clip: padding-box;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* ===================== NAMED DARK THEMES ===================== */
+/* Each theme retints the five high-impact surfaces: ambient wallpaper (web),
+   the floating app-window, glass panels, the primary accent gradient (the
+   from-violet-* / to-fuchsia-* button pair used app-wide), scrollbar and
+   selection. The default look (amethyst) lives in the base rules above. */
+
+/* ---- Emerald (the original "dark-green glassmorphism" brand) ---- */
+[data-theme="emerald"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(16, 185, 129, 0.7), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(5, 150, 105, 0.6), transparent 55%),
+    linear-gradient(135deg, #064e3b 0%, #0f766e 45%, #10b981 100%);
+}
+[data-theme="emerald"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(16, 185, 129, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(10, 30, 26, 0.985), rgba(6, 20, 17, 0.995));
+}
+[data-theme="emerald"] .from-violet-500 { --tw-gradient-from: #10b981 var(--tw-gradient-from-position); }
+[data-theme="emerald"] .to-fuchsia-500 { --tw-gradient-to: #34d399 var(--tw-gradient-to-position); }
+[data-theme="emerald"] .from-violet-600 { --tw-gradient-from: #059669 var(--tw-gradient-from-position); }
+[data-theme="emerald"] .to-fuchsia-600 { --tw-gradient-to: #10b981 var(--tw-gradient-to-position); }
+[data-theme="emerald"] *::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.32); background-clip: padding-box; }
+[data-theme="emerald"] ::selection { background: rgba(16, 185, 129, 0.35); color: #fff; }
+
+/* ---- Midnight (deep blue / sky) ---- */
+[data-theme="midnight"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(14, 165, 233, 0.6), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(79, 70, 229, 0.6), transparent 55%),
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #0ea5e9 100%);
+}
+[data-theme="midnight"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(56, 130, 246, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.985), rgba(8, 13, 28, 0.995));
+}
+[data-theme="midnight"] .from-violet-500 { --tw-gradient-from: #0ea5e9 var(--tw-gradient-from-position); }
+[data-theme="midnight"] .to-fuchsia-500 { --tw-gradient-to: #6366f1 var(--tw-gradient-to-position); }
+[data-theme="midnight"] .from-violet-600 { --tw-gradient-from: #0284c7 var(--tw-gradient-from-position); }
+[data-theme="midnight"] .to-fuchsia-600 { --tw-gradient-to: #4f46e5 var(--tw-gradient-to-position); }
+[data-theme="midnight"] *::-webkit-scrollbar-thumb { background: rgba(56, 130, 246, 0.34); background-clip: padding-box; }
+[data-theme="midnight"] ::selection { background: rgba(56, 130, 246, 0.38); color: #fff; }
+
+/* ---- Sunset (rose → amber) ---- */
+[data-theme="sunset"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(251, 113, 133, 0.6), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(245, 158, 11, 0.55), transparent 55%),
+    linear-gradient(135deg, #7c2d12 0%, #be123c 45%, #f59e0b 100%);
+}
+[data-theme="sunset"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(251, 113, 133, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(36, 18, 22, 0.985), rgba(24, 12, 14, 0.995));
+}
+[data-theme="sunset"] .from-violet-500 { --tw-gradient-from: #fb7185 var(--tw-gradient-from-position); }
+[data-theme="sunset"] .to-fuchsia-500 { --tw-gradient-to: #f59e0b var(--tw-gradient-to-position); }
+[data-theme="sunset"] .from-violet-600 { --tw-gradient-from: #f43f5e var(--tw-gradient-from-position); }
+[data-theme="sunset"] .to-fuchsia-600 { --tw-gradient-to: #d97706 var(--tw-gradient-to-position); }
+[data-theme="sunset"] *::-webkit-scrollbar-thumb { background: rgba(251, 113, 133, 0.34); background-clip: padding-box; }
+[data-theme="sunset"] ::selection { background: rgba(251, 113, 133, 0.4); color: #fff; }
+
+/* ---- Crimson (red → orange) ---- */
+[data-theme="crimson"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(239, 68, 68, 0.6), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(249, 115, 22, 0.55), transparent 55%),
+    linear-gradient(135deg, #450a0a 0%, #991b1b 45%, #f97316 100%);
+}
+[data-theme="crimson"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(239, 68, 68, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(32, 14, 14, 0.985), rgba(22, 9, 9, 0.995));
+}
+[data-theme="crimson"] .from-violet-500 { --tw-gradient-from: #ef4444 var(--tw-gradient-from-position); }
+[data-theme="crimson"] .to-fuchsia-500 { --tw-gradient-to: #f97316 var(--tw-gradient-to-position); }
+[data-theme="crimson"] .from-violet-600 { --tw-gradient-from: #dc2626 var(--tw-gradient-from-position); }
+[data-theme="crimson"] .to-fuchsia-600 { --tw-gradient-to: #ea580c var(--tw-gradient-to-position); }
+[data-theme="crimson"] *::-webkit-scrollbar-thumb { background: rgba(239, 68, 68, 0.34); background-clip: padding-box; }
+[data-theme="crimson"] ::selection { background: rgba(239, 68, 68, 0.4); color: #fff; }
+
+/* ---- Ocean (cyan → teal) ---- */
+[data-theme="ocean"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(6, 182, 212, 0.6), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(20, 184, 166, 0.55), transparent 55%),
+    linear-gradient(135deg, #042f2e 0%, #0e7490 45%, #06b6d4 100%);
+}
+[data-theme="ocean"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(6, 182, 212, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(8, 26, 28, 0.985), rgba(5, 18, 20, 0.995));
+}
+[data-theme="ocean"] .from-violet-500 { --tw-gradient-from: #06b6d4 var(--tw-gradient-from-position); }
+[data-theme="ocean"] .to-fuchsia-500 { --tw-gradient-to: #14b8a6 var(--tw-gradient-to-position); }
+[data-theme="ocean"] .from-violet-600 { --tw-gradient-from: #0891b2 var(--tw-gradient-from-position); }
+[data-theme="ocean"] .to-fuchsia-600 { --tw-gradient-to: #0d9488 var(--tw-gradient-to-position); }
+[data-theme="ocean"] *::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.34); background-clip: padding-box; }
+[data-theme="ocean"] ::selection { background: rgba(6, 182, 212, 0.4); color: #fff; }
+
+/* ---- Rose (pink → red) ---- */
+[data-theme="rose"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(236, 72, 153, 0.55), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(244, 63, 94, 0.5), transparent 55%),
+    linear-gradient(135deg, #500724 0%, #9d174d 45%, #ec4899 100%);
+}
+[data-theme="rose"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(236, 72, 153, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(30, 12, 22, 0.985), rgba(20, 8, 15, 0.995));
+}
+[data-theme="rose"] .from-violet-500 { --tw-gradient-from: #ec4899 var(--tw-gradient-from-position); }
+[data-theme="rose"] .to-fuchsia-500 { --tw-gradient-to: #f43f5e var(--tw-gradient-to-position); }
+[data-theme="rose"] .from-violet-600 { --tw-gradient-from: #db2777 var(--tw-gradient-from-position); }
+[data-theme="rose"] .to-fuchsia-600 { --tw-gradient-to: #e11d48 var(--tw-gradient-to-position); }
+[data-theme="rose"] *::-webkit-scrollbar-thumb { background: rgba(236, 72, 153, 0.34); background-clip: padding-box; }
+[data-theme="rose"] ::selection { background: rgba(236, 72, 153, 0.4); color: #fff; }
+
+/* ---- Gold (amber → yellow) ---- */
+[data-theme="gold"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(245, 158, 11, 0.55), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(234, 179, 8, 0.5), transparent 55%),
+    linear-gradient(135deg, #422006 0%, #a16207 45%, #eab308 100%);
+}
+[data-theme="gold"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(245, 158, 11, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(28, 22, 8, 0.985), rgba(20, 15, 6, 0.995));
+}
+[data-theme="gold"] .from-violet-500 { --tw-gradient-from: #f59e0b var(--tw-gradient-from-position); }
+[data-theme="gold"] .to-fuchsia-500 { --tw-gradient-to: #eab308 var(--tw-gradient-to-position); }
+[data-theme="gold"] .from-violet-600 { --tw-gradient-from: #d97706 var(--tw-gradient-from-position); }
+[data-theme="gold"] .to-fuchsia-600 { --tw-gradient-to: #ca8a04 var(--tw-gradient-to-position); }
+[data-theme="gold"] *::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.34); background-clip: padding-box; }
+[data-theme="gold"] ::selection { background: rgba(245, 158, 11, 0.4); color: #1a1205; }
+
+/* ---- Graphite (desaturated slate) ---- */
+[data-theme="graphite"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(100, 116, 139, 0.5), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(148, 163, 184, 0.4), transparent 55%),
+    linear-gradient(135deg, #0f172a 0%, #334155 45%, #64748b 100%);
+}
+[data-theme="graphite"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(148, 163, 184, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(17, 23, 35, 0.985), rgba(11, 15, 24, 0.995));
+}
+[data-theme="graphite"] .from-violet-500 { --tw-gradient-from: #64748b var(--tw-gradient-from-position); }
+[data-theme="graphite"] .to-fuchsia-500 { --tw-gradient-to: #94a3b8 var(--tw-gradient-to-position); }
+[data-theme="graphite"] .from-violet-600 { --tw-gradient-from: #475569 var(--tw-gradient-from-position); }
+[data-theme="graphite"] .to-fuchsia-600 { --tw-gradient-to: #64748b var(--tw-gradient-to-position); }
+[data-theme="graphite"] *::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.34); background-clip: padding-box; }
+[data-theme="graphite"] ::selection { background: rgba(148, 163, 184, 0.4); color: #fff; }
+
+/* ===================== LIGHT THEME ===================== */
+/* The app is authored in white-on-dark utilities; light mode remaps the shared
+   surfaces and the most common text/border utilities to dark-on-light. */
+.light body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(196, 181, 253, 0.7), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(221, 214, 254, 0.7), transparent 55%),
+    linear-gradient(135deg, #cdbdf2 0%, #d8ccf5 45%, #ece6fb 100%);
+  color: #241a3b;
+}
+
+.light .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(139, 92, 246, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(250, 248, 255, 0.985), rgba(243, 240, 251, 0.995));
+  border: 1px solid rgba(20, 12, 40, 0.08);
+}
+.light .glass {
+  background: rgba(20, 12, 40, 0.035);
+  border: 1px solid rgba(20, 12, 40, 0.08);
+}
+.light .panel {
+  background: linear-gradient(180deg, rgba(20, 12, 40, 0.04), rgba(20, 12, 40, 0.02));
+}
+
+/* Text utility remap (most-used opacities) */
+.light .text-white\/90,
+.light .text-white\/85,
+.light .text-white\/80 { color: rgba(28, 20, 48, 0.92); }
+.light .text-white\/75,
+.light .text-white\/70,
+.light .text-white\/65 { color: rgba(28, 20, 48, 0.8); }
+.light .text-white\/60,
+.light .text-white\/55,
+.light .text-white\/50,
+.light .text-white\/45 { color: rgba(28, 20, 48, 0.6); }
+.light .text-white\/40,
+.light .text-white\/35,
+.light .text-white\/30,
+.light .text-white\/25 { color: rgba(28, 20, 48, 0.42); }
+.light .text-current { color: rgba(28, 20, 48, 0.7); }
+
+/* Borders + subtle fills */
+.light .border-white\/\[0\.06\],
+.light .border-white\/10,
+.light .border-white\/5 { border-color: rgba(20, 12, 40, 0.1); }
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.015\],
+.light .bg-white\/5 { background-color: rgba(20, 12, 40, 0.035); }
+
+.light input::placeholder { color: rgba(28, 20, 48, 0.35); }
+.light *::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); background-clip: padding-box; }

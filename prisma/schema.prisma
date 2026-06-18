@@ -1,0 +1,57 @@
+// CHRONO — canonical data model.
+//
+// NOTE (Phase 1): this schema is the SINGLE SOURCE OF TRUTH for the data model
+// and the future source of SQL migrations. The Prisma *Client* is NOT used at
+// runtime — it cannot run inside a packaged Tauri .exe (its query engine needs a
+// Node runtime that the bundle doesn't ship). In Phase 2 the runtime persistence
+// is @tauri-apps/plugin-sql (SQLite via Rust/sqlx); migrations are generated from
+// this schema (e.g. `prisma migrate diff`).
+//
+// Fixes vs. the original spec:
+//   - the `parent` self-relation was missing `references: [id]`;
+//   - `onDelete: Cascade` belongs on the relation that owns the FK (parent/project);
+//   - the original code block was left unclosed;
+//   - the Tag<->Task many-to-many is given an explicit relation name.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./chrono.db"
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  tasks     Task[]
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String  @id @default(uuid())
+  title       String
+  isCompleted Boolean @default(false)
+  priority    Int     @default(0) // 0..3
+
+  // self-relation → infinite nesting
+  parentId String?
+  parent   Task?  @relation("TaskToSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks Task[] @relation("TaskToSubtasks")
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  tags      Tag[]    @relation("TaskTags")
+  createdAt DateTime @default(now())
+
+  @@index([parentId])
+  @@index([projectId])
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  tasks Task[] @relation("TaskTags")
+}
