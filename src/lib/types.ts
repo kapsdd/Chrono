@@ -8,6 +8,9 @@ export type Priority = 0 | 1 | 2 | 3;
 /** Project view modes (the List / Kanban / Gantt switcher). */
 export type ProjectView = "list" | "board" | "gantt";
 
+/** Repeat cadence for recurring tasks / habits. */
+export type Recurrence = "daily" | "weekly" | "monthly";
+
 /** Collaborator permission tiers, from most to least powerful. */
 export type Role = "owner" | "admin" | "editor" | "viewer";
 
@@ -23,6 +26,9 @@ export interface Collaborator {
 
 export interface Project {
   id: string;
+  /** auth.uid() of the project owner. Preserved on edits so shared-project
+   *  members never accidentally reassign ownership. */
+  ownerId?: string;
   name: string;
   /** UUID exposed for the project-sharing feature. */
   shareId: string;
@@ -34,6 +40,10 @@ export interface Project {
   collaborators?: Collaborator[];
   /** Active view mode for this project. Defaults to "list". */
   view?: ProjectView;
+  /** Published to the lobby (joinable by code + password). */
+  published?: boolean;
+  /** Lobby join code (visible to the owner so they can share it). */
+  joinCode?: string | null;
   createdAt: string; // ISO string (localStorage-friendly)
 }
 
@@ -74,6 +84,14 @@ export interface Task {
   due?: string | null;
   /** UI-only: whether this task's subtree is collapsed. Persisted for convenience. */
   collapsed?: boolean;
+  /** Tracked time in seconds (Pomodoro / manual timer). */
+  timeSpent?: number;
+  /** Repeat cadence; non-null makes this a recurring task / habit. */
+  recurrence?: Recurrence | null;
+  /** Consecutive on-time completions (habit streak). */
+  streak?: number;
+  /** ISO timestamp of the last completion (drives streak continuity). */
+  lastCompletedAt?: string | null;
 }
 
 /** Result of parsing a Smart Input line. */

@@ -16,6 +16,7 @@ export type IconName =
   | "search"
   | "timer"
   | "bell"
+  | "repeat"
   | "collapse";
 
 const PATHS: Record<IconName, ReactElement> = {
@@ -111,6 +112,14 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <polyline points="13 17 18 12 13 7" />
       <polyline points="6 17 11 12 6 7" />
+    </>
+  ),
+  repeat: (
+    <>
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </>
   ),
 };

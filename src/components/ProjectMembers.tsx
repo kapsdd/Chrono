@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Project, Role } from "@/lib/types";
 import { useChronoStore } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
+import { repo } from "@/lib/repo";
+import { errMessage } from "@/lib/errMessage";
+
+interface LobbyMember {
+  user_id: string;
+  role: string;
+  name: string | null;
+  avatar: string | null;
+  joined_at: string;
+}
 
 const ROLE_LABEL: Record<Role, string> = {
   owner: "Владелец",
@@ -37,12 +47,51 @@ export function ProjectMembers({
   const setCollaboratorRole = useChronoStore((s) => s.setCollaboratorRole);
   const removeCollaborator = useChronoStore((s) => s.removeCollaborator);
   const transferOwnership = useChronoStore((s) => s.transferOwnership);
+  const publishLobby = useChronoStore((s) => s.publishLobby);
+  const unpublishLobby = useChronoStore((s) => s.unpublishLobby);
+  const refresh = useChronoStore((s) => s.refresh);
   // Re-read the live project so the list updates as we mutate.
   const live = useChronoStore((s) => s.projects.find((p) => p.id === project.id)) ?? project;
 
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role>("editor");
   const [confirmTransfer, setConfirmTransfer] = useState<string | null>(null);
+  const [lobbyPass, setLobbyPass] = useState("");
+  const [lobbyBusy, setLobbyBusy] = useState(false);
+  const [lobbyError, setLobbyError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [lobbyMembers, setLobbyMembers] = useState<LobbyMember[]>([]);
+
+  // Only the real owner can open/close the lobby (the RPC enforces it too).
+  const isOwner = !session || !live.ownerId || session.id === live.ownerId;
+
+  // Load the lobby membership list for a shared project.
+  const loadMembers = useCallback(() => {
+    if (!live.published) {
+      setLobbyMembers([]);
+      return;
+    }
+    repo
+      .fetchMembers(live.id)
+      .then(setLobbyMembers)
+      .catch((e) => console.error("fetchMembers", e));
+  }, [live.id, live.published]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  const kick = async (userId: string) => {
+    await repo.leaveProject(live.id, userId);
+    loadMembers();
+  };
+
+  const leave = async () => {
+    if (!session) return;
+    await repo.leaveProject(live.id, session.id);
+    await refresh(); // the project leaves our list
+    onClose();
+  };
 
   // Seed the signed-in user as owner the first time the panel opens.
   useEffect(() => {
@@ -143,6 +192,123 @@ export function ProjectMembers({
               </div>
             ))}
           </div>
+
+          {/* lobby — join by code + password */}
+          {isOwner ? (
+            <div className="mt-5 rounded-xl border border-violet-400/20 bg-violet-500/[0.06] p-3">
+              <div className="mb-2 text-[12px] font-medium text-violet-100/80">
+                Лобби — вход по коду и паролю
+              </div>
+              {live.published && live.joinCode ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-center font-mono text-[15px] tracking-[0.2em] text-violet-100">
+                      {live.joinCode}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(live.joinCode ?? "");
+                        setCopied(true);
+                        window.setTimeout(() => setCopied(false), 1500);
+                      }}
+                      className="rounded-lg border border-white/10 px-3 py-2 text-[12px] text-white/70 hover:bg-white/5"
+                    >
+                      {copied ? "Скопировано" : "Копировать"}
+                    </button>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-white/40">
+                    Передайте код и пароль — по ним присоединяются к проекту на любом устройстве.
+                  </p>
+
+                  {/* lobby members */}
+                  {lobbyMembers.length > 0 && (
+                    <div className="mt-1 space-y-1.5">
+                      <div className="text-[11px] uppercase tracking-wider text-white/35">
+                        Присоединились ({lobbyMembers.length})
+                      </div>
+                      {lobbyMembers.map((m) => (
+                        <div key={m.user_id} className="flex items-center gap-2.5">
+                          <span
+                            className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[11px] font-semibold text-white"
+                            style={m.avatar ? { background: `url(${m.avatar}) center/cover` } : undefined}
+                          >
+                            {!m.avatar && initials(m.name ?? "?")}
+                          </span>
+                          <span className="flex-1 truncate text-[12.5px] text-white/80">
+                            {m.name ?? "Участник"}
+                          </span>
+                          <button
+                            onClick={() => void kick(m.user_id)}
+                            title="Исключить"
+                            className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-rose-300"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => void unpublishLobby(live.id)}
+                    className="text-[12px] text-rose-300/70 hover:text-rose-300"
+                  >
+                    Закрыть доступ
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] leading-relaxed text-white/45">
+                    Придумайте пароль и нажмите «Открыть». Приложение выдаст код —
+                    делитесь кодом и паролем, по ним другие войдут в проект.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={lobbyPass}
+                      onChange={(e) => setLobbyPass(e.target.value)}
+                      placeholder="Пароль для входа"
+                      className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 outline-none focus:border-violet-400/40"
+                    />
+                    <button
+                      disabled={lobbyBusy || lobbyPass.trim().length < 3}
+                      onClick={async () => {
+                        setLobbyBusy(true);
+                        setLobbyError(null);
+                        try {
+                          await publishLobby(live.id, lobbyPass.trim());
+                          setLobbyPass("");
+                        } catch (e) {
+                          setLobbyError(`Не удалось открыть лобби: ${errMessage(e)}`);
+                        } finally {
+                          setLobbyBusy(false);
+                        }
+                      }}
+                      className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-[13px] font-medium text-white hover:scale-[1.02] active:scale-95 disabled:opacity-40"
+                    >
+                      {lobbyBusy ? "…" : "Открыть"}
+                    </button>
+                  </div>
+                  {lobbyError && (
+                    <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200/80">
+                      {lobbyError}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : live.published ? (
+            <div className="mt-5 space-y-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.06] p-3">
+              <div className="mb-1 text-[12px] font-medium text-violet-100/80">Лобби</div>
+              <p className="text-[12px] text-white/60">Вы участник этого общего проекта.</p>
+              <button
+                onClick={() => void leave()}
+                className="rounded-lg border border-rose-400/30 px-3 py-1.5 text-[12.5px] text-rose-200/80 hover:bg-rose-500/10"
+              >
+                Покинуть проект
+              </button>
+            </div>
+          ) : null}
 
           {/* invite */}
           <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">

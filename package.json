@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "CHRONO — premium dark-green glassmorphism task manager (Phase 1: web core)",
+  "author": "CHRONO",
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.1.1",
     "@fontsource/jetbrains-mono": "^5.1.1",
+    "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
     "github": "^14.0.0",
@@ -37,23 +39,33 @@
     "typescript": "^5.7.2"
   },
   "build": {
-    "appId": "com.chrono.app",
-    "productName": "CHRONO",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "electron/**/*",
-      "out/**/*",
-      "package.json",
-      "!**/node_modules/**"
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+  "appId": "com.chrono.app",
+  "productName": "CHRONO",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "electron/**/*",
+    "out/**/*",
+    "okno/icon.png",
+    "package.json",
+    "!**/node_modules/**"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "okno/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "CHRONO",
+    "installerIcon": "okno/icon.ico",
+    "uninstallerIcon": "okno/icon.ico",
+    "runAfterFinish": true,
+    "artifactName": "CHRONO-Setup-${version}.${ext}"
   }
+}
 }

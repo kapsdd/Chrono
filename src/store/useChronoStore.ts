@@ -7,14 +7,19 @@ import type {
   Priority,
   Project,
   ProjectView,
+  Recurrence,
   Role,
   Task,
 } from "@/lib/types";
 import { parseInput } from "@/lib/parseInput";
+import { repo } from "@/lib/repo";
+import { enqueue, pendingWrites, readCache, writeCache } from "@/lib/sync";
+import { supabase } from "@/lib/supabase";
 
-// Phase 1 persistence: a single localStorage blob. The async method signatures
-// (Promise-returning) intentionally mirror the Phase 2 repository so swapping in
-// the SQLite/Tauri backend later is a drop-in — the components already `await`.
+// Persistence: Supabase, keyed on the signed-in Discord profile (owner_id =
+// auth.uid()). Mutations update local state optimistically and write through to
+// Supabase in the background, so a profile's projects follow it across devices.
+// Mutators keep their Promise-returning signatures — components already await.
 
 export type ViewFilter = string | null;
 
@@ -24,6 +29,7 @@ export type ViewId =
   | "today"
   | "plans"
   | "calendar"
+  | "habits"
   | "project"
   | "noproject"
   | "someday"
@@ -31,7 +37,9 @@ export type ViewId =
   | "trash"
   | "settings";
 
-const STORAGE_KEY = "chrono.v1";
+// Device-local UI navigation state. This is a per-device preference, not profile
+// data, so it stays in localStorage rather than syncing through Supabase.
+const NAV_KEY = "chrono.nav";
 
 // Accent colours cycled onto new projects (sidebar dots).
 const PROJECT_COLORS = [
@@ -44,15 +52,12 @@ const PROJECT_COLORS = [
   "#818cf8", // indigo
 ];
 
-interface Persisted {
+interface ChronoState {
   tasks: Task[];
   projects: Project[];
   friends: Friend[];
   activeProjectId: ViewFilter;
   activeView: ViewId;
-}
-
-interface ChronoState extends Persisted {
   ready: boolean;
   query: string;
   bootstrap: () => Promise<void>;
@@ -60,7 +65,10 @@ interface ChronoState extends Persisted {
   setQuery: (q: string) => void;
   setActiveProject: (id: ViewFilter) => void;
   createProject: (name: string) => Promise<Project | null>;
+  renameProject: (id: string, name: string) => void;
+  deleteProject: (id: string) => Promise<void>;
   addFromInput: (raw: string, parentId?: string | null) => Promise<void>;
+  renameTask: (id: string, title: string) => void;
   toggleComplete: (id: string) => Promise<void>;
   toggleCollapse: (id: string) => void;
   deleteTask: (id: string) => Promise<void>;
@@ -76,10 +84,43 @@ interface ChronoState extends Persisted {
   ensureOwner: (name: string, avatar?: string) => void;
   addFriend: (name: string, avatar?: string) => void;
   removeFriend: (id: string) => void;
+  // time tracking (#11) + recurrence / habits (#14)
+  addTime: (id: string, seconds: number) => void;
+  setRecurrence: (id: string, recurrence: Recurrence | null) => void;
+  // lobby — shared projects joined by code + password (#19)
+  publishLobby: (projectId: string, password: string) => Promise<string | null>;
+  unpublishLobby: (projectId: string) => Promise<void>;
+  joinLobby: (
+    code: string,
+    password: string,
+    name?: string,
+    avatar?: string,
+  ) => Promise<boolean>;
+  /** Re-pull the signed-in profile's data from the server. */
+  refresh: () => Promise<void>;
 }
 
-// crypto.randomUUID is available in every browser CHRONO targets; the fallback
-// keeps SSR / older runtimes from throwing.
+// Streak/roll helpers for recurring tasks. A check-in continues the streak if
+// the previous one happened within ~1.5 periods; otherwise it resets to 1.
+const PERIOD_MS: Record<Recurrence, number> = {
+  daily: 86_400_000,
+  weekly: 7 * 86_400_000,
+  monthly: 30 * 86_400_000,
+};
+
+function nextStreak(prevIso: string | null | undefined, now: number, r: Recurrence): number {
+  if (!prevIso) return 1;
+  const gap = now - Date.parse(prevIso);
+  return gap >= 0 && gap <= PERIOD_MS[r] * 1.5 ? -1 : 1; // -1 = "continue" sentinel
+}
+
+function rollDue(due: string | null | undefined, now: number, r: Recurrence): string {
+  const base = Math.max(now, due ? Date.parse(due) : now);
+  return new Date(base + PERIOD_MS[r]).toISOString();
+}
+
+// crypto.randomUUID yields a valid uuid — matching the uuid primary keys in the
+// Supabase schema. The fallback keeps SSR / older runtimes from throwing.
 const uid = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -87,48 +128,114 @@ const uid = (): string =>
 
 const nowIso = () => new Date().toISOString();
 
-function load(): Persisted {
-  const empty: Persisted = {
-    tasks: [],
-    projects: [],
-    friends: [],
-    activeProjectId: null,
-    activeView: "plans",
-  };
-  if (typeof window === "undefined") return empty;
+function loadNav(): { activeProjectId: ViewFilter; activeView: ViewId } {
+  const fallback = { activeProjectId: null as ViewFilter, activeView: "plans" as ViewId };
+  if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return empty;
-    const parsed = JSON.parse(raw) as Partial<Persisted>;
+    const raw = window.localStorage.getItem(NAV_KEY);
+    if (!raw) return fallback;
+    const p = JSON.parse(raw) as Partial<typeof fallback>;
     return {
-      // Backfill the drag-and-drop sort key for tasks saved before it existed.
-      tasks: (parsed.tasks ?? []).map((t) => ({
-        ...t,
-        order: t.order ?? (Date.parse(t.createdAt) || 0),
-      })),
-      projects: parsed.projects ?? [],
-      friends: parsed.friends ?? [],
-      activeProjectId: parsed.activeProjectId ?? null,
-      activeView: parsed.activeView ?? "plans",
+      activeProjectId: p.activeProjectId ?? null,
+      activeView: p.activeView ?? "plans",
     };
   } catch {
-    return empty;
+    return fallback;
   }
 }
 
 export const useChronoStore = create<ChronoState>((set, get) => {
-  // Write-through: snapshot the persisted slice on every mutation.
-  const persist = () => {
+  // Owner of the rows we write — auth.uid() of the signed-in Discord profile.
+  // Null when signed out; mutations become no-op writes until a profile loads.
+  let ownerId: string | null = null;
+  let subscribed = false;
+
+  const saveNav = () => {
     if (typeof window === "undefined") return;
-    const { tasks, projects, friends, activeProjectId, activeView } = get();
+    const { activeProjectId, activeView } = get();
     try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ tasks, projects, friends, activeProjectId, activeView }),
-      );
+      window.localStorage.setItem(NAV_KEY, JSON.stringify({ activeProjectId, activeView }));
     } catch {
-      /* quota / private-mode — state still lives in memory this session */
+      /* quota / private-mode */
     }
+  };
+
+  // Snapshot the local data into the offline cache for instant next-launch load.
+  const cache = () => {
+    if (!ownerId) return;
+    const { tasks, projects, friends } = get();
+    writeCache(ownerId, { tasks, projects, friends });
+  };
+
+  // Write-through helpers: update the offline queue (which writes through to
+  // Supabase, or retries later if offline), then refresh the local cache.
+  const saveProject = (p: Project) => {
+    if (ownerId) enqueue({ k: "upProject", project: p, owner: ownerId });
+    cache();
+  };
+  const saveTask = (t: Task) => {
+    if (ownerId) enqueue({ k: "upTask", task: t, owner: ownerId });
+    cache();
+  };
+  const saveTasks = (tasks: Task[]) => {
+    if (ownerId && tasks.length) enqueue({ k: "upTasks", tasks, owner: ownerId });
+    cache();
+  };
+
+  // Load the signed-in profile's data, or clear to empty when signed out.
+  const reload = async () => {
+    const { data } = await supabase.auth.getSession();
+    const id = data.session?.user?.id ?? null;
+    ownerId = id;
+    if (!id) {
+      set({ tasks: [], projects: [], friends: [], ready: true });
+      return;
+    }
+    // Paint cached data immediately (offline-first), then reconcile with the
+    // server. If the fetch fails (offline), the cache stays on screen.
+    const cached = readCache(id);
+    if (cached) set({ ...cached, ready: true });
+    try {
+      const snap = await repo.fetchAll();
+      set({ ...snap, ready: true });
+      writeCache(id, snap);
+    } catch (e) {
+      console.error("Failed to load profile data", e);
+      set({ ready: true });
+    }
+  };
+
+  // ---- realtime sync (#19) ----
+  // Subscribe to row changes on tasks/projects; RLS scopes events to rows this
+  // user can see, so collaborators on a shared project get each other's edits
+  // live. We reconcile by reloading (debounced), but only once our own pending
+  // writes have drained, so a remote event never clobbers a local edit.
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+  let reloadTimer: number | undefined;
+
+  const scheduleReload = () => {
+    if (typeof window === "undefined") return;
+    window.clearTimeout(reloadTimer);
+    reloadTimer = window.setTimeout(() => {
+      if (pendingWrites() > 0) {
+        scheduleReload(); // our writes haven't landed yet — wait
+        return;
+      }
+      void reload();
+    }, 900);
+  };
+
+  const subscribeRealtime = () => {
+    if (channel) {
+      void supabase.removeChannel(channel);
+      channel = null;
+    }
+    if (!ownerId) return;
+    channel = supabase
+      .channel("chrono-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, scheduleReload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleReload)
+      .subscribe();
   };
 
   const findOrCreateProjectByName = (name: string): string | null => {
@@ -141,20 +248,39 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     const color = PROJECT_COLORS[get().projects.length % PROJECT_COLORS.length];
     const project: Project = {
       id: uid(),
+      ownerId: ownerId ?? undefined,
       name: trimmed,
       shareId: uid(),
       color,
       createdAt: nowIso(),
     };
     set((s) => ({ projects: [...s.projects, project] }));
+    saveProject(project);
     return project.id;
   };
 
   const patchProject = (projectId: string, patch: (p: Project) => Project) => {
+    let updated: Project | undefined;
     set((s) => ({
-      projects: s.projects.map((p) => (p.id === projectId ? patch(p) : p)),
+      projects: s.projects.map((p) => {
+        if (p.id !== projectId) return p;
+        updated = patch(p);
+        return updated;
+      }),
     }));
-    persist();
+    if (updated) saveProject(updated);
+  };
+
+  const patchTask = (id: string, patch: (t: Task) => Task) => {
+    let updated: Task | undefined;
+    set((s) => ({
+      tasks: s.tasks.map((t) => {
+        if (t.id !== id) return t;
+        updated = patch(t);
+        return updated;
+      }),
+    }));
+    if (updated) saveTask(updated);
   };
 
   return {
@@ -167,27 +293,54 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     ready: false,
 
     bootstrap: async () => {
-      if (get().ready) return;
-      set({ ...load(), ready: true });
+      // Restore device-local nav, load profile data, and reload whenever the
+      // signed-in profile changes (login, logout, switching accounts).
+      set({ ...loadNav() });
+      if (!subscribed) {
+        subscribed = true;
+        supabase.auth.onAuthStateChange(() => {
+          void reload().then(subscribeRealtime);
+        });
+      }
+      await reload();
+      subscribeRealtime();
     },
 
     setView: (view) => {
       set({ activeView: view, activeProjectId: null });
-      persist();
+      saveNav();
     },
 
     setQuery: (q) => set({ query: q }),
 
     setActiveProject: (id) => {
       set({ activeProjectId: id, activeView: "project" });
-      persist();
+      saveNav();
     },
 
     createProject: async (name) => {
       const id = findOrCreateProjectByName(name);
       if (!id) return null;
-      persist();
       return get().projects.find((p) => p.id === id) ?? null;
+    },
+
+    renameProject: (id, name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      patchProject(id, (p) => ({ ...p, name: trimmed }));
+    },
+
+    deleteProject: async (id) => {
+      // Drop the project and its tasks locally; the DB cascades tasks via FK.
+      set((s) => ({
+        projects: s.projects.filter((p) => p.id !== id),
+        tasks: s.tasks.filter((t) => t.projectId !== id),
+        activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
+        activeView: s.activeProjectId === id ? "plans" : s.activeView,
+      }));
+      enqueue({ k: "delProject", id });
+      cache();
+      saveNav();
     },
 
     addFromInput: async (raw, parentId = null) => {
@@ -203,10 +356,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       if (parsed.project) projectId = findOrCreateProjectByName(parsed.project);
 
       // New tasks sort to the top (smallest order) of their list.
-      const minOrder = get().tasks.reduce(
-        (m, t) => Math.min(m, t.order ?? 0),
-        0,
-      );
+      const minOrder = get().tasks.reduce((m, t) => Math.min(m, t.order ?? 0), 0);
       const task: Task = {
         id: uid(),
         title: parsed.title,
@@ -219,14 +369,36 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         createdAt: nowIso(),
       };
       set((s) => ({ tasks: [...s.tasks, task] }));
-      persist();
+      saveTask(task);
+    },
+
+    renameTask: (id, title) => {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      patchTask(id, (t) => ({ ...t, title: trimmed }));
     },
 
     toggleComplete: async (id) => {
-      // Completing a task completes its whole subtree; un-completing only the node.
       const tasks = get().tasks;
       const target = tasks.find((t) => t.id === id);
       if (!target) return;
+
+      // Recurring task / habit: completing is a "check-in" — bump the streak,
+      // roll the due date to the next period, and stay active rather than done.
+      if (target.recurrence && !target.isCompleted) {
+        const now = Date.now();
+        const cont = nextStreak(target.lastCompletedAt, now, target.recurrence);
+        const streak = cont === -1 ? (target.streak ?? 0) + 1 : 1;
+        patchTask(id, (t) => ({
+          ...t,
+          streak,
+          lastCompletedAt: new Date(now).toISOString(),
+          due: rollDue(t.due, now, t.recurrence as Recurrence),
+        }));
+        return;
+      }
+
+      // Completing a task completes its whole subtree; un-completing only the node.
       const next = !target.isCompleted;
 
       const descendants = new Set<string>([id]);
@@ -243,23 +415,21 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         }
       }
 
-      set({
-        tasks: tasks.map((t) =>
-          t.id === id || (next && descendants.has(t.id))
-            ? { ...t, isCompleted: next }
-            : t,
-        ),
+      const changed: Task[] = [];
+      const updated = tasks.map((t) => {
+        if (t.id === id || (next && descendants.has(t.id))) {
+          const nt = { ...t, isCompleted: next };
+          changed.push(nt);
+          return nt;
+        }
+        return t;
       });
-      persist();
+      set({ tasks: updated });
+      saveTasks(changed);
     },
 
     toggleCollapse: (id) => {
-      set((s) => ({
-        tasks: s.tasks.map((t) =>
-          t.id === id ? { ...t, collapsed: !t.collapsed } : t,
-        ),
-      }));
-      persist();
+      patchTask(id, (t) => ({ ...t, collapsed: !t.collapsed }));
     },
 
     deleteTask: async (id) => {
@@ -277,28 +447,20 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         }
       }
       set({ tasks: tasks.filter((t) => !doomed.has(t.id)) });
-      persist();
+      enqueue({ k: "delTasks", ids: [...doomed] });
+      cache();
     },
 
     setTaskDue: (id, due) => {
-      set((s) => ({
-        tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)),
-      }));
-      persist();
+      patchTask(id, (t) => ({ ...t, due }));
     },
 
     setPriority: (id, priority) => {
-      set((s) => ({
-        tasks: s.tasks.map((t) => (t.id === id ? { ...t, priority } : t)),
-      }));
-      persist();
+      patchTask(id, (t) => ({ ...t, priority }));
     },
 
     setTaskOrder: (id, order) => {
-      set((s) => ({
-        tasks: s.tasks.map((t) => (t.id === id ? { ...t, order } : t)),
-      }));
-      persist();
+      patchTask(id, (t) => ({ ...t, order }));
     },
 
     setProjectView: (projectId, view) => {
@@ -310,11 +472,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       if (!trimmed) return;
       patchProject(projectId, (p) => {
         const existing = p.collaborators ?? [];
-        if (
-          existing.some(
-            (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
-          )
-        ) {
+        if (existing.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
           return p;
         }
         const collaborator: Collaborator = {
@@ -367,6 +525,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
 
     ensureOwner: (name, avatar) => {
       const trimmed = name.trim() || "Вы";
+      const touched: Project[] = [];
       set((s) => ({
         projects: s.projects.map((p) => {
           const existing = p.collaborators ?? [];
@@ -378,28 +537,90 @@ export const useChronoStore = create<ChronoState>((set, get) => {
             role: "owner",
             addedAt: nowIso(),
           };
-          return { ...p, collaborators: [owner, ...existing] };
+          const np = { ...p, collaborators: [owner, ...existing] };
+          touched.push(np);
+          return np;
         }),
       }));
-      persist();
+      touched.forEach(saveProject);
     },
 
     addFriend: (name, avatar) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      if (
-        get().friends.some((f) => f.name.toLowerCase() === trimmed.toLowerCase())
-      ) {
+      if (get().friends.some((f) => f.name.toLowerCase() === trimmed.toLowerCase())) {
         return;
       }
       const friend: Friend = { id: uid(), name: trimmed, avatar, addedAt: nowIso() };
       set((s) => ({ friends: [...s.friends, friend] }));
-      persist();
+      if (ownerId) enqueue({ k: "upFriend", friend, owner: ownerId });
+      cache();
     },
 
     removeFriend: (id) => {
       set((s) => ({ friends: s.friends.filter((f) => f.id !== id) }));
-      persist();
+      enqueue({ k: "delFriend", id });
+      cache();
+    },
+
+    // ---- time tracking (#11) ----
+    addTime: (id, seconds) => {
+      if (seconds <= 0) return;
+      patchTask(id, (t) => ({ ...t, timeSpent: (t.timeSpent ?? 0) + Math.round(seconds) }));
+    },
+
+    // ---- recurrence / habits (#14) ----
+    setRecurrence: (id, recurrence) => {
+      patchTask(id, (t) => ({
+        ...t,
+        recurrence,
+        // Seed a due date so the first check-in has something to roll forward.
+        due: recurrence && !t.due ? rollDue(null, Date.now(), recurrence) : t.due,
+        streak: recurrence ? t.streak ?? 0 : 0,
+      }));
+    },
+
+    // ---- lobby (#19) ----
+    publishLobby: async (projectId, password) => {
+      // Throws on failure so the UI can surface the real reason (missing RPC =
+      // migration not applied, or auth error = not signed in).
+      const code = makeJoinCode();
+      await repo.publishProject(projectId, code, password);
+      patchProject(projectId, (p) => ({ ...p, published: true, joinCode: code, shared: true }));
+      return code;
+    },
+
+    unpublishLobby: async (projectId) => {
+      try {
+        await repo.unpublishProject(projectId);
+        patchProject(projectId, (p) => ({ ...p, published: false, joinCode: null }));
+      } catch (e) {
+        console.error("unpublishLobby", e);
+      }
+    },
+
+    joinLobby: async (code, password, name, avatar) => {
+      try {
+        await repo.joinProject(code.trim(), password, name, avatar);
+        await reload(); // pull the newly visible shared project + its tasks
+        subscribeRealtime();
+        return true;
+      } catch (e) {
+        console.error("joinLobby", e);
+        return false;
+      }
+    },
+
+    refresh: async () => {
+      await reload();
     },
   };
 });
+
+// Short, unambiguous lobby code (no easily-confused chars), e.g. "K7P-29Q".
+function makeJoinCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const pick = (n: number) =>
+    Array.from({ length: n }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+  return `${pick(3)}-${pick(3)}`;
+}

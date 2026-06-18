@@ -17,10 +17,14 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { GanttChart } from "@/components/GanttChart";
 import { ProjectMembers } from "@/components/ProjectMembers";
 import { FriendsModal } from "@/components/FriendsModal";
+import { LobbyJoinModal } from "@/components/LobbyJoinModal";
+import { CalendarView } from "@/components/CalendarView";
+import { HabitsView } from "@/components/HabitsView";
+import { Reminders } from "@/components/Reminders";
 import { buildTree } from "@/lib/tree";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
-import { useUI } from "@/store/useUI";
+import { useUI, THEMES } from "@/store/useUI";
 import type { ProjectView } from "@/lib/types";
 
 const VIEW_META: Record<Exclude<ViewId, "project">, { title: string; icon: IconName }> = {
@@ -28,6 +32,7 @@ const VIEW_META: Record<Exclude<ViewId, "project">, { title: string; icon: IconN
   today: { title: "Сегодня", icon: "star" },
   plans: { title: "Планы", icon: "list" },
   calendar: { title: "Календарь", icon: "calendar" },
+  habits: { title: "Привычки", icon: "repeat" },
   noproject: { title: "Без проекта", icon: "shuffle" },
   someday: { title: "Когда-нибудь", icon: "moon" },
   archive: { title: "Архив", icon: "archive" },
@@ -57,6 +62,7 @@ export default function Home() {
   const [introDone, setIntroDone] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [lobbyOpen, setLobbyOpen] = useState(false);
 
   useEffect(() => {
     hydrate();
@@ -79,6 +85,11 @@ export default function Home() {
         break;
       case "project":
         active = inProject(activeProjectId).filter((t) => !t.isCompleted);
+        break;
+      case "habits":
+        // Recurring tasks live here; they never sit in the "completed" bucket.
+        active = tasks.filter((t) => t.recurrence && !t.isCompleted);
+        completed = [];
         break;
       case "archive":
         active = [];
@@ -146,12 +157,13 @@ export default function Home() {
 
       {showApp && (
         <div className="flex h-full">
+          <Reminders />
           <div
             className={`shrink-0 overflow-hidden transition-[width] duration-300 ${
               sidebarCollapsed ? "w-0" : "w-64"
             }`}
           >
-            <Sidebar />
+            <Sidebar onJoinLobby={() => setLobbyOpen(true)} />
           </div>
 
           <main className="flex h-full min-w-0 flex-1 flex-col">
@@ -208,6 +220,10 @@ export default function Home() {
             <div className="flex-1 overflow-y-auto px-8 py-5">
               {isSettings ? (
                 <SettingsPanel />
+              ) : activeView === "calendar" ? (
+                <CalendarView tasks={tasks} />
+              ) : activeView === "habits" ? (
+                <HabitsView tasks={tasks} />
               ) : activeView === "project" && projectView === "board" ? (
                 <KanbanBoard tasks={activeTasks} />
               ) : activeView === "project" && projectView === "gantt" ? (
@@ -236,6 +252,7 @@ export default function Home() {
             <ProjectMembers project={activeProject} onClose={() => setMembersOpen(false)} />
           )}
           {friendsOpen && <FriendsModal onClose={() => setFriendsOpen(false)} />}
+          {lobbyOpen && <LobbyJoinModal onClose={() => setLobbyOpen(false)} />}
         </div>
       )}
 
@@ -286,25 +303,17 @@ function SettingsPanel() {
 
         <div className="mt-4">
           <div className="mb-2 text-[13px] text-white/55">Тема оформления</div>
-          <div className="flex gap-2">
-            <ThemeOption
-              active={theme === "dark"}
-              onClick={() => setTheme("dark")}
-              label="Тёмная"
-              swatch="linear-gradient(135deg,#1a1230,#0f0b1c)"
-            />
-            <ThemeOption
-              active={theme === "light"}
-              onClick={() => setTheme("light")}
-              label="Светлая"
-              swatch="linear-gradient(135deg,#f4f1fb,#e6e0f5)"
-            />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {THEMES.map((t) => (
+              <ThemeOption
+                key={t.id}
+                active={theme === t.id}
+                onClick={() => setTheme(t.id)}
+                label={t.label}
+                swatch={t.swatch}
+              />
+            ))}
           </div>
-        </div>
-
-        <div className="mt-5 flex items-center gap-3">
-          <span className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-[0_0_12px_rgba(139,92,246,0.6)]" />
-          <span className="text-[13px] text-white/60">Акцент: Violet / Fuchsia</span>
         </div>
       </div>
     </div>
@@ -325,17 +334,17 @@ function ThemeOption({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-1 items-center gap-3 rounded-xl border p-3 transition-colors ${
+      className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
         active
           ? "border-violet-400/50 bg-violet-500/10"
           : "border-white/10 hover:border-white/20"
       }`}
     >
       <span
-        className="h-9 w-9 rounded-lg border border-white/15"
+        className="h-9 w-9 shrink-0 rounded-lg border border-white/15"
         style={{ background: swatch }}
       />
-      <span className="text-[13px] text-white/80">{label}</span>
+      <span className="truncate text-[13px] text-white/80">{label}</span>
       {active && <span className="ml-auto text-violet-300">✓</span>}
     </button>
   );

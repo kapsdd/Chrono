@@ -3,33 +3,19 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// ---- Discord OAuth config -------------------------------------------------
-// Provide credentials via env or a chrono.config.json next to the executable:
-//   { "discordClientId": "...", "discordClientSecret": "..." }
-// Without them, login falls back to a local guest session.
-function discordConfig() {
-  if (process.env.DISCORD_CLIENT_ID) {
-    return { id: process.env.DISCORD_CLIENT_ID, secret: process.env.DISCORD_CLIENT_SECRET };
-  }
-  // Search: bundled (inside app.asar), next to the exe, then cwd. The first two
-  // let credentials ship with the build; the exe-dir copy allows overriding.
-  const dirs = [app.getAppPath(), path.dirname(app.getPath("exe")), process.cwd()];
-  for (const dir of dirs) {
-    try {
-      const raw = fs.readFileSync(path.join(dir, "chrono.config.json"), "utf8");
-      const j = JSON.parse(raw);
-      if (j.discordClientId) return { id: j.discordClientId, secret: j.discordClientSecret };
-    } catch {
-      /* not present here */
-    }
-  }
-  return { id: null, secret: null };
-}
+// ---- Supabase Discord OAuth (loopback) ------------------------------------
+// Auth is owned by Supabase: it holds the Discord app credentials and issues the
+// session that RLS keys every project/task row to. Here we just open Supabase's
+// authorize URL in the system browser and capture the PKCE `code` it sends back
+// to the fixed loopback redirect. The renderer exchanges the code for a session.
+//
+// Register this exact URL under Supabase → Auth → URL Configuration → Redirect
+// URLs:  http://127.0.0.1:53117/auth/callback
+const AUTH_PORT = 53117;
+const AUTH_PATH = "/auth/callback";
 
-// Real Authorization-Code flow over a loopback redirect. Resolves a Session.
-function discordLogin() {
-  const { id, secret } = discordConfig();
-  if (!id) return Promise.resolve(null); // → renderer uses guest demo
+function captureAuthCode(authUrl) {
+  if (!authUrl) return Promise.resolve(null);
 
   return new Promise((resolve) => {
     let settled = false;
@@ -42,62 +28,22 @@ function discordLogin() {
       resolve(v);
     };
 
-    const server = http.createServer(async (req, res) => {
-      const u = new URL(req.url, "http://127.0.0.1");
-      if (u.pathname !== "/discord/callback") {
+    const server = http.createServer((req, res) => {
+      const u = new URL(req.url, `http://127.0.0.1:${AUTH_PORT}`);
+      if (u.pathname !== AUTH_PATH) {
         res.writeHead(404);
         res.end();
         return;
       }
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end("<html><body style='background:#1a0f2e;color:#e9cf8c;font-family:sans-serif;text-align:center;padding-top:20vh'><h2>CHRONO</h2><p>Можно вернуться в приложение.</p></body></html>");
-      const code = u.searchParams.get("code");
-      if (!code) return done(null);
-      try {
-        const redirectUri = `http://127.0.0.1:${port}/discord/callback`;
-        const body = new URLSearchParams({
-          client_id: id,
-          client_secret: secret || "",
-          grant_type: "authorization_code",
-          code,
-          redirect_uri: redirectUri,
-        });
-        const tok = await fetch("https://discord.com/api/oauth2/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body,
-        }).then((r) => r.json());
-        const me = await fetch("https://discord.com/api/users/@me", {
-          headers: { Authorization: `Bearer ${tok.access_token}` },
-        }).then((r) => r.json());
-        done({
-          id: me.id,
-          username: me.global_name || me.username,
-          avatar: me.avatar
-            ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png`
-            : undefined,
-          provider: "discord",
-          grantedAt: new Date().toISOString(),
-        });
-      } catch {
-        done(null);
-      }
+      res.end(
+        "<html><body style='background:#1a0f2e;color:#e9cf8c;font-family:sans-serif;text-align:center;padding-top:20vh'><h2>CHRONO</h2><p>Вход выполнен — можно вернуться в приложение.</p></body></html>",
+      );
+      done(u.searchParams.get("code"));
     });
 
-    // Fixed port so a single redirect URI can be registered in Discord:
-    //   http://127.0.0.1:53117/discord/callback
-    const port = 53117;
     server.on("error", () => done(null));
-    server.listen(port, "127.0.0.1", () => {
-      const redirectUri = `http://127.0.0.1:${port}/discord/callback`;
-      const authUrl =
-        "https://discord.com/api/oauth2/authorize?" +
-        new URLSearchParams({
-          client_id: id,
-          redirect_uri: redirectUri,
-          response_type: "code",
-          scope: "identify",
-        }).toString();
+    server.listen(AUTH_PORT, "127.0.0.1", () => {
       shell.openExternal(authUrl);
     });
     setTimeout(() => done(null), 120000); // give up after 2 min
@@ -159,9 +105,21 @@ function startServer() {
       });
     });
     server.on("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+    // Fixed port → stable origin (http://127.0.0.1:53110) across launches. This
+    // is essential: localStorage (Supabase session, theme, offline cache, write
+    // queue) is partitioned by origin, so a random port would wipe everything —
+    // including the login — on every restart.
+    server.listen(APP_PORT, "127.0.0.1", () => resolve(APP_PORT));
   });
 }
+
+// Stable app-server port (distinct from the 53117 OAuth-callback port).
+const APP_PORT = 53110;
+
+// App icon (okno/icon.png — included in the build via electron-builder `files`).
+// Resolves in dev and inside the asar; the exe/installer icon is set separately
+// via electron-builder's win.icon.
+const ICON_PATH = path.join(__dirname, "..", "okno", "icon.png");
 
 async function createWindow() {
   const port = await startServer();
@@ -175,6 +133,7 @@ async function createWindow() {
     backgroundColor: "#00000000",
     hasShadow: false,
     autoHideMenuBar: true,
+    icon: ICON_PATH,
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -220,18 +179,33 @@ function registerIpc() {
     if (w) (w.isMaximized() ? w.unmaximize() : w.maximize());
   });
   ipcMain.on("win:close", () => focused()?.close());
-  ipcMain.handle("discord:login", () => discordLogin());
+  ipcMain.handle("discord:authCode", (_e, authUrl) => captureAuthCode(authUrl));
 }
 
-app.whenReady().then(() => {
-  registerIpc();
-  createWindow();
-});
+// Single-instance lock: a second launch just focuses the existing window. This
+// also guarantees the fixed APP_PORT can't collide with our own process.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+  app.whenReady().then(() => {
+    registerIpc();
+    createWindow();
+  });
 
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+}

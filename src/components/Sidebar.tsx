@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 import { SPRING } from "@/lib/motion";
 import { Icon, type IconName } from "./icons";
+import { APP_ICON } from "@/lib/brand";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
 
 function focusSmartInput() {
@@ -12,7 +13,7 @@ function focusSmartInput() {
   el?.focus();
 }
 
-export function Sidebar() {
+export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
   const projects = useChronoStore((s) => s.projects);
   const tasks = useChronoStore((s) => s.tasks);
   const activeView = useChronoStore((s) => s.activeView);
@@ -20,6 +21,8 @@ export function Sidebar() {
   const setView = useChronoStore((s) => s.setView);
   const setActiveProject = useChronoStore((s) => s.setActiveProject);
   const createProject = useChronoStore((s) => s.createProject);
+  const renameProject = useChronoStore((s) => s.renameProject);
+  const deleteProject = useChronoStore((s) => s.deleteProject);
 
   const [newName, setNewName] = useState("");
 
@@ -29,6 +32,7 @@ export function Sidebar() {
     ).length;
 
   const archivedCount = tasks.filter((t) => t.isCompleted).length;
+  const habitCount = tasks.filter((t) => t.recurrence && !t.isCompleted).length;
 
   const sharedProjects = projects.filter((p) => p.shared);
   const myProjects = projects.filter((p) => !p.shared);
@@ -43,8 +47,8 @@ export function Sidebar() {
     <aside className="panel flex h-full w-64 shrink-0 flex-col border-r border-white/[0.06]">
       {/* logo */}
       <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-[0_4px_14px_rgba(139,92,246,0.5)]">
-          <Icon name="star" size={16} />
+        <div className="h-8 w-8 overflow-hidden rounded-lg bg-black shadow-[0_4px_14px_rgba(139,92,246,0.5)]">
+          <img src={APP_ICON} alt="CHRONO" className="h-full w-full object-cover" draggable={false} />
         </div>
         <div className="leading-tight">
           <div className="text-[15px] font-semibold tracking-wide text-white/90">
@@ -71,22 +75,40 @@ export function Sidebar() {
             active={activeView === "calendar"}
             onClick={() => setView("calendar")}
           />
+          <NavItem
+            icon="repeat"
+            label="Привычки"
+            count={habitCount}
+            active={activeView === "habits"}
+            onClick={() => setView("habits")}
+          />
         </div>
 
         {/* shared projects */}
-        <SectionLabel>
-          Совместные проекты <span className="text-violet-300/60">β</span>
-        </SectionLabel>
+        <div className="mb-1 mt-4 flex items-center justify-between px-3">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Совместные проекты <span className="text-violet-300/60">β</span>
+          </span>
+          <button
+            onClick={onJoinLobby}
+            title="Войти по коду"
+            className="rounded-md px-1.5 py-0.5 text-[11px] text-violet-300/70 transition-colors hover:bg-white/5 hover:text-violet-200"
+          >
+            + код
+          </button>
+        </div>
         {sharedProjects.length > 0 ? (
           <div className="flex flex-col gap-0.5">
             {sharedProjects.map((p) => (
-              <NavItem
+              <ProjectRow
                 key={p.id}
-                dot={p.color}
-                label={p.name}
+                name={p.name}
+                color={p.color}
                 count={activeCount(p.id)}
                 active={activeView === "project" && activeProjectId === p.id}
-                onClick={() => setActiveProject(p.id)}
+                onOpen={() => setActiveProject(p.id)}
+                onRename={(name) => renameProject(p.id, name)}
+                onDelete={() => void deleteProject(p.id)}
               />
             ))}
           </div>
@@ -100,13 +122,15 @@ export function Sidebar() {
         <SectionLabel>Мои проекты</SectionLabel>
         <div className="flex flex-col gap-0.5">
           {myProjects.map((p) => (
-            <NavItem
+            <ProjectRow
               key={p.id}
-              dot={p.color}
-              label={p.name}
+              name={p.name}
+              color={p.color}
               count={activeCount(p.id)}
               active={activeView === "project" && activeProjectId === p.id}
-              onClick={() => setActiveProject(p.id)}
+              onOpen={() => setActiveProject(p.id)}
+              onRename={(name) => renameProject(p.id, name)}
+              onDelete={() => void deleteProject(p.id)}
             />
           ))}
           <div className="flex items-center gap-2.5 px-3 py-1.5">
@@ -170,6 +194,128 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+}
+
+// Project row: opens on click, with rename (inline) and delete (two-step
+// confirm) actions revealed on hover.
+function ProjectRow({
+  name,
+  color,
+  count,
+  active,
+  onOpen,
+  onRename,
+  onDelete,
+}: {
+  name: string;
+  color?: string;
+  count?: number;
+  active: boolean;
+  onOpen: () => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(name);
+  const [confirm, setConfirm] = useState(false);
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={color ? { backgroundColor: color, boxShadow: `0 0 8px ${color}` } : undefined}
+        />
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => {
+            if (value.trim()) onRename(value);
+            setEditing(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (value.trim()) onRename(value);
+              setEditing(false);
+            }
+            if (e.key === "Escape") {
+              setValue(name);
+              setEditing(false);
+            }
+          }}
+          className="w-full rounded-md border border-violet-400/40 bg-white/[0.04] px-1.5 py-0.5 text-[13px] text-white/90 outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={clsx(
+        "group/row relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors",
+        active ? "text-white" : "text-white/55 hover:bg-white/[0.04] hover:text-white/85",
+      )}
+    >
+      {active && (
+        <motion.span
+          layoutId="nav-active"
+          className="absolute inset-0 rounded-lg border border-violet-400/30 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/10"
+          transition={SPRING}
+        />
+      )}
+      <button onClick={onOpen} className="relative flex min-w-0 flex-1 items-center gap-2.5">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={color ? { backgroundColor: color, boxShadow: `0 0 8px ${color}` } : undefined}
+        />
+        <span className="truncate">{name}</span>
+      </button>
+
+      {confirm ? (
+        <div className="relative flex items-center gap-1">
+          <button
+            onClick={() => {
+              setConfirm(false);
+              onDelete();
+            }}
+            className="rounded px-1.5 py-0.5 text-[11px] text-rose-300 hover:bg-rose-500/15"
+          >
+            Удалить
+          </button>
+          <button
+            onClick={() => setConfirm(false)}
+            className="rounded px-1 py-0.5 text-[11px] text-white/40 hover:bg-white/5"
+          >
+            Нет
+          </button>
+        </div>
+      ) : (
+        <div className="relative flex items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+          <button
+            onClick={() => {
+              setValue(name);
+              setEditing(true);
+            }}
+            title="Переименовать"
+            className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-violet-300"
+          >
+            ✎
+          </button>
+          <button
+            onClick={() => setConfirm(true)}
+            title="Удалить проект"
+            className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-rose-300"
+          >
+            ✕
+          </button>
+          {count ? (
+            <span className="ml-0.5 font-mono text-[11px] text-white/30">{count}</span>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 

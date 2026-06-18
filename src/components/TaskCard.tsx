@@ -8,22 +8,38 @@ import type { TaskNode } from "@/lib/types";
 import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
 import { PriorityDots, TagChip } from "./TaskMeta";
+import { RecurrenceControl, StreakBadge, TimeTracker } from "./TaskExtras";
 
 export function TaskCard({ node }: { node: TaskNode }) {
   const toggleComplete = useChronoStore((s) => s.toggleComplete);
   const toggleCollapse = useChronoStore((s) => s.toggleCollapse);
   const deleteTask = useChronoStore((s) => s.deleteTask);
   const addFromInput = useChronoStore((s) => s.addFromInput);
+  const renameTask = useChronoStore((s) => s.renameTask);
 
   const [completing, setCompleting] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [subValue, setSubValue] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [titleValue, setTitleValue] = useState(node.title);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const commitTitle = () => {
+    if (titleValue.trim()) renameTask(node.id, titleValue);
+    else setTitleValue(node.title);
+    setEditing(false);
+  };
 
   const hasChildren = node.children.length > 0;
   const struck = node.isCompleted || completing;
 
   const onCheck = () => {
+    // Recurring task: a check-in (bumps streak, rolls the due date) — it stays
+    // in the list, so skip the fly-away strikethrough.
+    if (node.recurrence) {
+      void toggleComplete(node.id);
+      return;
+    }
     if (node.isCompleted) {
       void toggleComplete(node.id);
       return;
@@ -121,16 +137,40 @@ export function TaskCard({ node }: { node: TaskNode }) {
           </AnimatePresence>
         </button>
 
-        {/* title + animated strikethrough */}
+        {/* title + animated strikethrough (double-click to rename) */}
         <div className="relative min-w-0 flex-1">
-          <span
-            className={clsx(
-              "block truncate text-[14.5px]",
-              node.isCompleted ? "text-white/45" : "text-white/90",
-            )}
-          >
-            {node.title}
-          </span>
+          {editing ? (
+            <input
+              autoFocus
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitTitle();
+                }
+                if (e.key === "Escape") {
+                  setTitleValue(node.title);
+                  setEditing(false);
+                }
+              }}
+              className="w-full rounded-md border border-violet-400/40 bg-white/[0.04] px-2 py-0.5 text-[14.5px] text-white/90 outline-none"
+            />
+          ) : (
+            <span
+              onDoubleClick={() => {
+                setTitleValue(node.title);
+                setEditing(true);
+              }}
+              className={clsx(
+                "block truncate text-[14.5px]",
+                node.isCompleted ? "text-white/45" : "text-white/90",
+              )}
+            >
+              {node.title}
+            </span>
+          )}
           <motion.span
             aria-hidden
             className="pointer-events-none absolute left-0 top-1/2 h-px w-full origin-left bg-violet-400 shadow-[0_0_6px_#8b5cf6]"
@@ -142,6 +182,7 @@ export function TaskCard({ node }: { node: TaskNode }) {
 
         {/* meta */}
         <div className="flex shrink-0 items-center gap-2">
+          {node.recurrence && <StreakBadge streak={node.streak ?? 0} />}
           {node.tags.slice(0, 3).map((t) => (
             <TagChip key={t} name={t} />
           ))}
@@ -150,6 +191,18 @@ export function TaskCard({ node }: { node: TaskNode }) {
 
         {/* hover actions */}
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <TimeTracker node={node} />
+          <RecurrenceControl node={node} />
+          <button
+            onClick={() => {
+              setTitleValue(node.title);
+              setEditing(true);
+            }}
+            title="Переименовать"
+            className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-violet-300"
+          >
+            ✎
+          </button>
           <button
             onClick={() => setAddOpen((v) => !v)}
             title="Добавить подзадачу"

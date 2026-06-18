@@ -7,8 +7,10 @@ contextBridge.exposeInMainWorld("chrono", {
   minimize: () => ipcRenderer.send("win:minimize"),
   toggleMaximize: () => ipcRenderer.send("win:toggle-maximize"),
   close: () => ipcRenderer.send("win:close"),
-  // Resolves a Session when Discord is configured, else null (→ guest demo).
-  discordLogin: () => ipcRenderer.invoke("discord:login"),
+  // Opens the Supabase Discord auth URL in the system browser and resolves the
+  // OAuth `code` captured on the loopback redirect (null on cancel/timeout).
+  // The renderer exchanges it for a Supabase session via PKCE.
+  discordAuthCode: (authUrl) => ipcRenderer.invoke("discord:authCode", authUrl),
 });
 
 // Mark the document so desktop-only CSS (transparent backdrop) can apply,

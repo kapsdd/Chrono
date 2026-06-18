@@ -29,6 +29,7 @@ Thumbs.db
 .idea
 .vscode
 
-# misc working files
-/okno
+# misc working files — keep the app icon (build depends on it), ignore the rest
+/okno/*
+!/okno/icon.png
 /.claude

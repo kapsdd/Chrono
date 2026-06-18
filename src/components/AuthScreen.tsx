@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useSession } from "@/store/useSession";
+import { APP_ICON } from "@/lib/brand";
 
 const DISCORD = "#5865F2";
 
@@ -31,14 +32,8 @@ export function AuthScreen() {
         <div className="glass rounded-3xl border border-white/10 p-8 shadow-neon-strong">
           {/* brand */}
           <div className="mb-7 flex flex-col items-center text-center">
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-[0_8px_30px_rgba(139,92,246,0.5)]">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3c-3 3-4 7-4 10 0 3 1.6 6 4 8 2.4-2 4-5 4-8 0-3-1-7-4-10z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                />
-              </svg>
+            <div className="h-14 w-14 overflow-hidden rounded-2xl bg-black shadow-[0_8px_30px_rgba(139,92,246,0.5)]">
+              <img src={APP_ICON} alt="CHRONO" className="h-full w-full object-cover" draggable={false} />
             </div>
             <h1 className="mt-4 text-xl font-semibold tracking-wide text-white/90">
               CHRONO
