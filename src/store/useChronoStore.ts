@@ -101,6 +101,12 @@ interface ChronoState {
     name?: string,
     avatar?: string,
   ) => Promise<boolean>;
+  /** Owner-only: change a lobby member's role (editor / viewer). */
+  updateLobbyMemberRole: (
+    projectId: string,
+    userId: string,
+    role: "editor" | "viewer",
+  ) => Promise<boolean>;
   /** Re-pull the signed-in profile's data from the server. */
   refresh: () => Promise<void>;
 }
@@ -242,12 +248,19 @@ export const useChronoStore = create<ChronoState>((set, get) => {
   };
 
   // ---- realtime sync (#19) ----
-  // Subscribe to row changes on tasks/projects; RLS scopes events to rows this
-  // user can see, so collaborators on a shared project get each other's edits
-  // live. We reconcile by reloading (debounced), but only once our own pending
-  // writes have drained, so a remote event never clobbers a local edit.
+  // Subscribe to row changes on tasks / projects / project_members; RLS scopes
+  // events to rows this user can see, so collaborators on a shared project get
+  // each other's edits live. We reconcile by reloading (debounced) but only
+  // once our own pending writes have drained, so a remote event never clobbers
+  // a local edit. project_members is included so role changes and new joins
+  // propagate to both sides without a manual refresh.
   let channel: ReturnType<typeof supabase.channel> | null = null;
   let reloadTimer: number | undefined;
+
+  // 250ms is short enough to feel "live" — much faster than the 900ms we used
+  // to use — but still long enough to batch a burst of events from a single
+  // sync (e.g. a member kicked off a flurry of task updates) into one fetch.
+  const RELOAD_DEBOUNCE_MS = 250;
 
   const scheduleReload = () => {
     if (typeof window === "undefined") return;
@@ -258,7 +271,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         return;
       }
       void reload();
-    }, 900);
+    }, RELOAD_DEBOUNCE_MS);
   };
 
   const subscribeRealtime = () => {
@@ -271,6 +284,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       .channel("chrono-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, scheduleReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleReload)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_members" },
+        scheduleReload,
+      )
       .subscribe();
   };
 
@@ -694,6 +712,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         return true;
       } catch (e) {
         console.error("joinLobby", e);
+        return false;
+      }
+    },
+
+    updateLobbyMemberRole: async (projectId, userId, role) => {
+      try {
+        await repo.updateMemberRole(projectId, userId, role);
+        return true;
+      } catch (e) {
+        console.error("updateLobbyMemberRole", e);
         return false;
       }
     },

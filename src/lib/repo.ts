@@ -231,4 +231,15 @@ export const repo = {
       .eq("user_id", userId);
     if (error) throw error;
   },
+
+  // Owner changes a lobby member's role. The RPC enforces both the role
+  // whitelist and that the caller actually owns the project.
+  async updateMemberRole(projectId: string, userId: string, role: "editor" | "viewer") {
+    const { error } = await supabase.rpc("update_member_role", {
+      p_project: projectId,
+      p_user: userId,
+      p_role: role,
+    });
+    if (error) throw error;
+  },
 };

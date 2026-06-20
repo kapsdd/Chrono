@@ -1,6 +1,6 @@
 {
   "name": "chrono",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "CHRONO — premium dark-green glassmorphism task manager (Phase 1: web core)",
   "author": "CHRONO",
@@ -15,7 +15,6 @@
     "package:win": "next build && electron-packager . CHRONO --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=false --ignore=\"/node_modules\" --ignore=\"/(src|prisma|shablon|knopki|release|\\.next|\\.claude)\" --ignore=\"\\.(ts|tsx|tsbuildinfo|log)$\""
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.146",
     "@fontsource/inter": "^5.1.1",
     "@fontsource/jetbrains-mono": "^5.1.1",
     "@supabase/supabase-js": "^2.108.2",

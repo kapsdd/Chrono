@@ -6,6 +6,7 @@ import type { Project, Role } from "@/lib/types";
 import { useChronoStore } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
 import { repo } from "@/lib/repo";
+import { supabase } from "@/lib/supabase";
 import { errMessage } from "@/lib/errMessage";
 
 interface LobbyMember {
@@ -15,6 +16,23 @@ interface LobbyMember {
   avatar: string | null;
   joined_at: string;
 }
+
+// Только editor / viewer — admin/owner для участников лобби не назначаются:
+// владелец один (projects.owner_id), а более тонкие тиры не нужны.
+const LOBBY_ROLES: Array<{ value: "editor" | "viewer"; label: string }> = [
+  { value: "editor", label: "Редактор" },
+  { value: "viewer", label: "Наблюдатель" },
+];
+
+const LOBBY_ROLE_LABEL: Record<string, string> = {
+  editor: "Редактор",
+  viewer: "Наблюдатель",
+};
+
+const LOBBY_ROLE_BADGE: Record<string, string> = {
+  editor: "border-cyan-400/30 bg-cyan-500/10 text-cyan-200",
+  viewer: "border-white/15 bg-white/5 text-white/55",
+};
 
 const ROLE_LABEL: Record<Role, string> = {
   owner: "Владелец",
@@ -47,6 +65,7 @@ export function ProjectMembers({
   const transferOwnership = useChronoStore((s) => s.transferOwnership);
   const publishLobby = useChronoStore((s) => s.publishLobby);
   const unpublishLobby = useChronoStore((s) => s.unpublishLobby);
+  const updateLobbyMemberRole = useChronoStore((s) => s.updateLobbyMemberRole);
   const refresh = useChronoStore((s) => s.refresh);
   // Re-read the live project so the list updates as we mutate.
   const live = useChronoStore((s) => s.projects.find((p) => p.id === project.id)) ?? project;
@@ -88,9 +107,42 @@ export function ProjectMembers({
     loadMembers();
   }, [loadMembers]);
 
+  // Keep the lobby list live without forcing the owner to reopen the modal:
+  // any insert/delete/role-update on project_members for this project pulls
+  // a fresh list. RLS scopes the events to projects we can see.
+  useEffect(() => {
+    if (!live.published) return;
+    const ch = supabase
+      .channel(`lobby-${live.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_members",
+          filter: `project_id=eq.${live.id}`,
+        },
+        () => loadMembers(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [live.id, live.published, loadMembers]);
+
   const kick = async (userId: string) => {
     await repo.leaveProject(live.id, userId);
     loadMembers();
+  };
+
+  const changeMemberRole = async (userId: string, role: "editor" | "viewer") => {
+    // Optimistic update so the dropdown reflects immediately; realtime will
+    // confirm. If the RPC fails (e.g. not actually owner), reload to revert.
+    setLobbyMembers((list) =>
+      list.map((m) => (m.user_id === userId ? { ...m, role } : m)),
+    );
+    const ok = await updateLobbyMemberRole(live.id, userId, role);
+    if (!ok) loadMembers();
   };
 
   const leave = async () => {
@@ -278,26 +330,56 @@ export function ProjectMembers({
                       <div className="text-[11px] uppercase tracking-wider text-white/35">
                         Присоединились ({lobbyMembers.length})
                       </div>
-                      {lobbyMembers.map((m) => (
-                        <div key={m.user_id} className="flex items-center gap-2.5">
-                          <span
-                            className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[11px] font-semibold text-white"
-                            style={m.avatar ? { background: `url(${m.avatar}) center/cover` } : undefined}
+                      {lobbyMembers.map((m) => {
+                        const roleKey = m.role === "viewer" ? "viewer" : "editor";
+                        return (
+                          <div
+                            key={m.user_id}
+                            className="flex items-center gap-2.5 rounded-lg border border-white/[0.05] bg-white/[0.02] px-2 py-1.5"
                           >
-                            {!m.avatar && initials(m.name ?? "?")}
-                          </span>
-                          <span className="flex-1 truncate text-[12.5px] text-white/80">
-                            {m.name ?? "Участник"}
-                          </span>
-                          <button
-                            onClick={() => void kick(m.user_id)}
-                            title="Исключить"
-                            className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-rose-300"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
+                            <span
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[11px] font-semibold text-white"
+                              style={m.avatar ? { background: `url(${m.avatar}) center/cover` } : undefined}
+                            >
+                              {!m.avatar && initials(m.name ?? "?")}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[12.5px] text-white/80">
+                                {m.name ?? "Участник"}
+                              </div>
+                              <span
+                                className={`mt-0.5 inline-block rounded border px-1.5 py-px text-[10px] ${LOBBY_ROLE_BADGE[roleKey]}`}
+                              >
+                                {LOBBY_ROLE_LABEL[roleKey]}
+                              </span>
+                            </div>
+                            <select
+                              value={roleKey}
+                              onChange={(e) =>
+                                void changeMemberRole(
+                                  m.user_id,
+                                  e.target.value as "editor" | "viewer",
+                                )
+                              }
+                              title="Права участника"
+                              className="rounded-md border border-white/10 bg-[#171228] px-2 py-1 text-[11.5px] text-white/75 outline-none focus:border-violet-400/40"
+                            >
+                              {LOBBY_ROLES.map((r) => (
+                                <option key={r.value} value={r.value}>
+                                  {r.label}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => void kick(m.user_id)}
+                              title="Исключить"
+                              className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-rose-300"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 

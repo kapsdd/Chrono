@@ -129,6 +129,24 @@ as $member$
   );
 $member$;
 
+-- Может ли пользователь писать в проект: владелец или участник с ролью editor.
+-- Наблюдатели (viewer) проходят чтение, но не пишут — RLS на tasks использует
+-- эту функцию для разграничения.
+create or replace function public.can_write_project(p_project uuid, p_user uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $cw$
+  select exists (
+    select 1 from public.projects p
+    where p.id = p_project and p.owner_id = p_user
+  ) or exists (
+    select 1 from public.project_members m
+    where m.project_id = p_project and m.user_id = p_user and m.role = 'editor'
+  );
+$cw$;
+
 -- ---------------------------------------------------------------------------
 -- Row-Level Security
 -- ---------------------------------------------------------------------------
@@ -171,23 +189,25 @@ create policy "read own or shared tasks" on public.tasks
     auth.uid() = owner_id
     or (project_id is not null and public.is_project_member(project_id, auth.uid()))
   );
+-- Запись в задачу общего проекта требует роль editor (или владельца проекта).
+-- Личные задачи (project_id is null) — только сам владелец строки.
 create policy "insert own or shared tasks" on public.tasks
   for insert with check (
-    auth.uid() = owner_id
-    or (project_id is not null and public.is_project_member(project_id, auth.uid()))
+    (project_id is null and auth.uid() = owner_id)
+    or (project_id is not null and public.can_write_project(project_id, auth.uid()) and auth.uid() = owner_id)
   );
 create policy "update own or shared tasks" on public.tasks
   for update using (
-    auth.uid() = owner_id
-    or (project_id is not null and public.is_project_member(project_id, auth.uid()))
+    (project_id is null and auth.uid() = owner_id)
+    or (project_id is not null and public.can_write_project(project_id, auth.uid()))
   ) with check (
-    auth.uid() = owner_id
-    or (project_id is not null and public.is_project_member(project_id, auth.uid()))
+    (project_id is null and auth.uid() = owner_id)
+    or (project_id is not null and public.can_write_project(project_id, auth.uid()))
   );
 create policy "delete own or shared tasks" on public.tasks
   for delete using (
-    auth.uid() = owner_id
-    or (project_id is not null and public.is_project_member(project_id, auth.uid()))
+    (project_id is null and auth.uid() = owner_id)
+    or (project_id is not null and public.can_write_project(project_id, auth.uid()))
   );
 
 -- friends -------------------------------------------------------------------
@@ -276,6 +296,35 @@ begin
   return v_project.id;
 end;
 $join$;
+
+-- Владелец проекта меняет роль участника лобби. Доступные роли: editor, viewer.
+-- SECURITY DEFINER позволяет обновлять project_members без отдельной UPDATE
+-- политики; проверка владения встроена в запрос.
+create or replace function public.update_member_role(
+  p_project uuid, p_user uuid, p_role text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $role_upd$
+begin
+  if p_role not in ('editor','viewer') then
+    raise exception 'invalid role: %', p_role;
+  end if;
+  update public.project_members m
+     set role = p_role
+   where m.project_id = p_project
+     and m.user_id    = p_user
+     and exists (
+       select 1 from public.projects p
+        where p.id = p_project and p.owner_id = auth.uid()
+     );
+  if not found then
+    raise exception 'not owner or member missing';
+  end if;
+end;
+$role_upd$;
 
 -- ---------------------------------------------------------------------------
 -- Realtime: live-обновления для совместной работы.
