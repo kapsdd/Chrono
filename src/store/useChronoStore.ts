@@ -684,7 +684,12 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     joinLobby: async (code, password, name, avatar) => {
       try {
         await repo.joinProject(code.trim(), password, name, avatar);
-        await reload(); // pull the newly visible shared project + its tasks
+        // Pull the snapshot directly instead of going through reload(): reload
+        // short-circuits if any queued write is still pending, which would
+        // leave the just-joined shared project invisible on B's side.
+        const snap = await repo.fetchAll();
+        set({ ...snap, ready: true });
+        if (ownerId) writeCache(ownerId, snap);
         subscribeRealtime();
         return true;
       } catch (e) {
