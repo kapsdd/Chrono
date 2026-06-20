@@ -1,45 +1,117 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# ---------- dependencies ----------
+node_modules/
+/.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
-# next.js build output
-/.next
-/out
+# ---------- Next.js / build output ----------
+/.next/
+/out/
+/build/
+/dist/
 next-env.d.ts
 *.tsbuildinfo
+.swc/
+.turbo/
 
-# electron / packaged app
-/release
-/dist
+# ---------- Electron / packaged app ----------
+/release/
+/dist_electron/
+*.asar
+*.exe
+*.dmg
+*.pkg
+*.AppImage
+*.snap
+*.deb
+*.rpm
+*.msi
+*.zip
+*.tar.gz
 
-# secrets — DO NOT COMMIT Discord credentials
+# ---------- local config and secrets ----------
 chrono.config.json
-<<<<<<< HEAD
 .env
-.env.local
-.env.production
-=======
->>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets.json
 
-# logs
+# ---------- logs and diagnostics ----------
 *.log
+logs/
 dev.log
+dev-server.log
+dev-server.err.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+electron-builder-debug.yml
+electron-builder.env
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-# editor / os
+# ---------- test / coverage ----------
+/coverage/
+*.lcov
+.nyc_output/
+junit.xml
+
+# ---------- editor / OS ----------
 .DS_Store
+.AppleDouble
+.LSOverride
 Thumbs.db
-.idea
-.vscode
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+.idea/
+.vscode/
+!.vscode/settings.json.example
+*.swp
+*.swo
+*.swn
+*~
 
-# misc working files — keep the app icon (build depends on it), ignore the rest
+# ---------- generated / accidental root artifacts ----------
+/chrono@*
+/next
+
+# ---------- working assets: keep only icons ----------
 /okno/*
 !/okno/icon.png
-<<<<<<< HEAD
-/.claude
-=======
-/.claude
->>>>>>> c875f27599856b6c3face5ba617378cbd2fd23e0
+!/okno/icon.ico
+
+# ---------- Claude / AI tooling ----------
+/.claude/
+.claude/
+CLAUDE.md.bak
+.cursor/
+.aider*
+
+# ---------- Supabase local ----------
+/supabase/.branches/
+/supabase/.temp/
+
+# ---------- Prisma ----------
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/migrations/dev/
+
+# ---------- misc ----------
+*.tmp
+*.bak
+*.orig
+.cache/
+.parcel-cache/

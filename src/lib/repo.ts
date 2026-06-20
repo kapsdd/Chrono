@@ -2,6 +2,7 @@
 
 import type { Friend, Project, Task } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { normalizeKanbanColumns } from "@/lib/kanban";
 
 // Translation layer between the app's camelCase domain objects and the
 // snake_case Supabase rows. Row-Level Security (owner_id = auth.uid()) scopes
@@ -21,6 +22,7 @@ function projectToRow(p: Project, ownerId: string) {
     shared: p.shared ?? false,
     collaborators: p.collaborators ?? [],
     view: p.view ?? "list",
+    kanban_columns: normalizeKanbanColumns(p.kanbanColumns),
     created_at: p.createdAt,
   };
 }
@@ -35,6 +37,7 @@ function rowToProject(r: Record<string, unknown>): Project {
     shared: (r.shared as boolean) ?? false,
     collaborators: (r.collaborators as Project["collaborators"]) ?? [],
     view: (r.view as Project["view"]) ?? "list",
+    kanbanColumns: normalizeKanbanColumns(r.kanban_columns as Project["kanbanColumns"]),
     // join_code only exists once migration 0002 is applied; tolerate its absence.
     published: Boolean(r.join_code),
     joinCode: (r.join_code as string) ?? null,
@@ -57,6 +60,7 @@ function taskToRow(t: Task, ownerId: string) {
     due: t.due ?? null,
     collapsed: t.collapsed ?? false,
     time_spent: t.timeSpent ?? 0,
+    note: t.note?.trim() ? t.note : null,
     recurrence: t.recurrence ?? null,
     streak: t.streak ?? 0,
     last_completed_at: t.lastCompletedAt ?? null,
@@ -78,6 +82,7 @@ function rowToTask(r: Record<string, unknown>): Task {
     due: (r.due as string) ?? null,
     collapsed: (r.collapsed as boolean) ?? false,
     timeSpent: (r.time_spent as number) ?? 0,
+    note: (r.note as string) ?? "",
     recurrence: (r.recurrence as Task["recurrence"]) ?? null,
     streak: (r.streak as number) ?? 0,
     lastCompletedAt: (r.last_completed_at as string) ?? null,

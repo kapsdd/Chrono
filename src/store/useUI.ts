@@ -25,6 +25,12 @@ export interface ThemeMeta {
   light?: boolean;
 }
 
+export interface AchievementTheme {
+  tasks: number;
+  theme: Theme;
+  label: string;
+}
+
 export const THEMES: ThemeMeta[] = [
   { id: "amethyst", label: "Аметист", swatch: "linear-gradient(135deg,#8b5cf6,#d946ef)" },
   { id: "emerald", label: "Изумруд", swatch: "linear-gradient(135deg,#10b981,#34d399)" },
@@ -38,6 +44,15 @@ export const THEMES: ThemeMeta[] = [
   { id: "light", label: "Светлая", swatch: "linear-gradient(135deg,#f4f1fb,#e6e0f5)", light: true },
 ];
 
+export const ACHIEVEMENT_THEMES: AchievementTheme[] = [
+  { tasks: 0, theme: "amethyst", label: "Старт" },
+  { tasks: 5, theme: "emerald", label: "5 задач" },
+  { tasks: 15, theme: "ocean", label: "15 задач" },
+  { tasks: 30, theme: "sunset", label: "30 задач" },
+  { tasks: 50, theme: "gold", label: "50 задач" },
+  { tasks: 100, theme: "graphite", label: "100 задач" },
+];
+
 const THEME_IDS = new Set<Theme>(THEMES.map((t) => t.id));
 const isLight = (t: Theme) => THEMES.find((m) => m.id === t)?.light === true;
 
@@ -46,6 +61,7 @@ const UI_KEY = "chrono.ui";
 interface PersistedUI {
   theme: Theme;
   sidebarCollapsed: boolean;
+  achievementThemesEnabled: boolean;
 }
 
 // Map legacy values ("dark"/"light") onto the new named themes.
@@ -58,7 +74,11 @@ function normalizeTheme(value: unknown): Theme {
 }
 
 function load(): PersistedUI {
-  const fallback: PersistedUI = { theme: "amethyst", sidebarCollapsed: false };
+  const fallback: PersistedUI = {
+    theme: "amethyst",
+    sidebarCollapsed: false,
+    achievementThemesEnabled: false,
+  };
   if (typeof window === "undefined") return fallback;
   try {
     const raw = window.localStorage.getItem(UI_KEY);
@@ -67,6 +87,7 @@ function load(): PersistedUI {
     return {
       theme: normalizeTheme(p.theme),
       sidebarCollapsed: Boolean(p.sidebarCollapsed),
+      achievementThemesEnabled: Boolean(p.achievementThemesEnabled),
     };
   } catch {
     return fallback;
@@ -77,6 +98,8 @@ interface UIState extends PersistedUI {
   hydrated: boolean;
   hydrate: () => void;
   setTheme: (t: Theme) => void;
+  setAchievementThemesEnabled: (enabled: boolean) => void;
+  setThemeFromAchievement: (completedTasks: number) => void;
   toggleSidebar: () => void;
 }
 
@@ -100,6 +123,7 @@ function applyTheme(theme: Theme) {
 export const useUI = create<UIState>((set, get) => ({
   theme: "amethyst",
   sidebarCollapsed: false,
+  achievementThemesEnabled: false,
   hydrated: false,
 
   hydrate: () => {
@@ -111,12 +135,44 @@ export const useUI = create<UIState>((set, get) => ({
   setTheme: (theme) => {
     applyTheme(theme);
     set({ theme });
-    save({ theme, sidebarCollapsed: get().sidebarCollapsed });
+    save({
+      theme,
+      sidebarCollapsed: get().sidebarCollapsed,
+      achievementThemesEnabled: get().achievementThemesEnabled,
+    });
+  },
+
+  setAchievementThemesEnabled: (achievementThemesEnabled) => {
+    set({ achievementThemesEnabled });
+    save({
+      theme: get().theme,
+      sidebarCollapsed: get().sidebarCollapsed,
+      achievementThemesEnabled,
+    });
+  },
+
+  setThemeFromAchievement: (completedTasks) => {
+    if (!get().achievementThemesEnabled) return;
+    const unlocked = [...ACHIEVEMENT_THEMES]
+      .reverse()
+      .find((item) => completedTasks >= item.tasks);
+    if (!unlocked || unlocked.theme === get().theme) return;
+    applyTheme(unlocked.theme);
+    set({ theme: unlocked.theme });
+    save({
+      theme: unlocked.theme,
+      sidebarCollapsed: get().sidebarCollapsed,
+      achievementThemesEnabled: true,
+    });
   },
 
   toggleSidebar: () => {
     const sidebarCollapsed = !get().sidebarCollapsed;
     set({ sidebarCollapsed });
-    save({ theme: get().theme, sidebarCollapsed });
+    save({
+      theme: get().theme,
+      sidebarCollapsed,
+      achievementThemesEnabled: get().achievementThemesEnabled,
+    });
   },
 }));

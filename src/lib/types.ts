@@ -11,6 +11,13 @@ export type ProjectView = "list" | "board" | "gantt";
 /** Repeat cadence for recurring tasks / habits. */
 export type Recurrence = "daily" | "weekly" | "monthly";
 
+/** Kanban column settings. Columns still map to task priority for compatibility. */
+export interface KanbanColumn {
+  priority: Priority;
+  label: string;
+  color: string;
+}
+
 /** Collaborator permission tiers, from most to least powerful. */
 export type Role = "owner" | "admin" | "editor" | "viewer";
 
@@ -40,6 +47,8 @@ export interface Project {
   collaborators?: Collaborator[];
   /** Active view mode for this project. Defaults to "list". */
   view?: ProjectView;
+  /** Per-project labels/colours for the priority-backed kanban columns. */
+  kanbanColumns?: KanbanColumn[];
   /** Published to the lobby (joinable by code + password). */
   published?: boolean;
   /** Lobby join code (visible to the owner so they can share it). */
@@ -86,12 +95,29 @@ export interface Task {
   collapsed?: boolean;
   /** Tracked time in seconds (Pomodoro / manual timer). */
   timeSpent?: number;
+  /** Free-form task notes. */
+  note?: string;
   /** Repeat cadence; non-null makes this a recurring task / habit. */
   recurrence?: Recurrence | null;
   /** Consecutive on-time completions (habit streak). */
   streak?: number;
   /** ISO timestamp of the last completion (drives streak continuity). */
   lastCompletedAt?: string | null;
+}
+
+/** Stand-alone rich-text note (lives in the "Заметки" view, separate from
+ *  the per-task `Task.note` snippet). Content is sanitized HTML. */
+export interface Note {
+  id: string;
+  title: string;
+  /** Sanitized HTML produced by the rich-text editor. */
+  content: string;
+  /** Pinned notes stick to the top of the list. */
+  pinned?: boolean;
+  /** Optional accent colour shown on the card edge. */
+  color?: string;
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
 }
 
 /** Result of parsing a Smart Input line. */

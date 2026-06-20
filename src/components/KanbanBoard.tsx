@@ -3,21 +3,22 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
-import type { Priority, Task } from "@/lib/types";
+import type { KanbanColumn, Priority, Task } from "@/lib/types";
 import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
+import { normalizeKanbanColumns } from "@/lib/kanban";
 import { TagChip } from "./TaskMeta";
-
-const COLUMNS: { p: Priority; label: string; color: string }[] = [
-  { p: 3, label: "Срочно", color: "#fb7185" },
-  { p: 2, label: "Высокий", color: "#f59e0b" },
-  { p: 1, label: "Средний", color: "#a78bfa" },
-  { p: 0, label: "Без приоритета", color: "#64748b" },
-];
+import { NoteControl, TimeBadge } from "./TaskExtras";
 
 const ord = (t: Task) => t.order ?? 0;
 
-export function KanbanBoard({ tasks }: { tasks: Task[] }) {
+export function KanbanBoard({
+  tasks,
+  columns,
+}: {
+  tasks: Task[];
+  columns?: KanbanColumn[];
+}) {
   const toggleComplete = useChronoStore((s) => s.toggleComplete);
   const deleteTask = useChronoStore((s) => s.deleteTask);
   const setPriority = useChronoStore((s) => s.setPriority);
@@ -60,11 +61,11 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-3">
-      {COLUMNS.map((col) => {
-        const items = colItems(col.p);
-        const isOver = overCol === col.p;
+      {normalizeKanbanColumns(columns).map((col) => {
+        const items = colItems(col.priority);
+        const isOver = overCol === col.priority;
         return (
-          <div key={col.p} className="flex w-72 shrink-0 flex-col">
+          <div key={col.priority} className="flex w-72 shrink-0 flex-col">
             <div className="mb-3 flex items-center gap-2 px-1">
               <span
                 className="h-2.5 w-2.5 rounded-full"
@@ -77,12 +78,12 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             <div
               onDragOver={(e) => {
                 e.preventDefault();
-                setOverCol(col.p);
+                setOverCol(col.priority);
               }}
               onDragLeave={(e) => {
                 if (e.currentTarget === e.target) setOverCol(null);
               }}
-              onDrop={() => dropToColumn(col.p)}
+              onDrop={() => dropToColumn(col.priority)}
               className={clsx(
                 "flex min-h-[140px] flex-col gap-2 rounded-2xl border p-2 transition-colors",
                 isOver
@@ -113,7 +114,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                       }}
                       onDrop={(e) => {
                         e.stopPropagation();
-                        dropBefore(col.p, t.id);
+                        dropBefore(col.priority, t.id);
                       }}
                       className={clsx(
                         "glass group cursor-grab rounded-xl px-3 py-2.5 active:cursor-grabbing",
@@ -136,7 +137,21 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                         ))}
                       </div>
                     )}
+                    {(t.note?.trim() || (t.timeSpent ?? 0) > 0) && (
+                      <div className="mt-2 flex items-center gap-1 pl-7">
+                        {t.note?.trim() && (
+                          <span
+                            title={t.note}
+                            className="max-w-[180px] truncate rounded-md border border-amber-300/25 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-100/80"
+                          >
+                            {t.note.replace(/\s+/g, " ").slice(0, 40)}
+                          </span>
+                        )}
+                        <TimeBadge seconds={t.timeSpent ?? 0} />
+                      </div>
+                    )}
                     <div className="mt-2 flex items-center justify-end gap-1 pl-7 opacity-0 transition-opacity group-hover:opacity-100">
+                      <NoteControl node={t} />
                       <button
                         onClick={() => void deleteTask(t.id)}
                         title="Удалить"

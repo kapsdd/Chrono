@@ -8,7 +8,7 @@ import type { TaskNode } from "@/lib/types";
 import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
 import { PriorityDots, TagChip } from "./TaskMeta";
-import { RecurrenceControl, StreakBadge, TimeTracker } from "./TaskExtras";
+import { NoteControl, RecurrenceControl, StreakBadge, TimeTracker } from "./TaskExtras";
 
 export function TaskCard({ node }: { node: TaskNode }) {
   const toggleComplete = useChronoStore((s) => s.toggleComplete);
@@ -183,6 +183,14 @@ export function TaskCard({ node }: { node: TaskNode }) {
         {/* meta */}
         <div className="flex shrink-0 items-center gap-2">
           {node.recurrence && <StreakBadge streak={node.streak ?? 0} />}
+          {node.note?.trim() && (
+            <span
+              title={node.note}
+              className="rounded-md border border-amber-300/25 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-100/80"
+            >
+              заметка
+            </span>
+          )}
           {node.tags.slice(0, 3).map((t) => (
             <TagChip key={t} name={t} />
           ))}
@@ -191,6 +199,7 @@ export function TaskCard({ node }: { node: TaskNode }) {
 
         {/* hover actions */}
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <NoteControl node={node} />
           <TimeTracker node={node} />
           <RecurrenceControl node={node} />
           <button

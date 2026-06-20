@@ -42,8 +42,6 @@ export function ProjectMembers({
 }) {
   const session = useSession((s) => s.session);
   const ensureOwner = useChronoStore((s) => s.ensureOwner);
-  const friends = useChronoStore((s) => s.friends);
-  const addCollaborator = useChronoStore((s) => s.addCollaborator);
   const setCollaboratorRole = useChronoStore((s) => s.setCollaboratorRole);
   const removeCollaborator = useChronoStore((s) => s.removeCollaborator);
   const transferOwnership = useChronoStore((s) => s.transferOwnership);
@@ -53,14 +51,23 @@ export function ProjectMembers({
   // Re-read the live project so the list updates as we mutate.
   const live = useChronoStore((s) => s.projects.find((p) => p.id === project.id)) ?? project;
 
-  const [name, setName] = useState("");
-  const [role, setRole] = useState<Role>("editor");
   const [confirmTransfer, setConfirmTransfer] = useState<string | null>(null);
   const [lobbyPass, setLobbyPass] = useState("");
   const [lobbyBusy, setLobbyBusy] = useState(false);
   const [lobbyError, setLobbyError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [lobbyMembers, setLobbyMembers] = useState<LobbyMember[]>([]);
+  // We keep the just-set password in memory so we can show it back in the
+  // invitation text. The server only stores the hash, so once the modal closes
+  // we lose it — that's intentional, the owner can rotate it any time.
+  const [sharedPass, setSharedPass] = useState<string>("");
+  const [showPass, setShowPass] = useState(false);
+
+  const copyText = (text: string, key: string) => {
+    if (typeof navigator !== "undefined") navigator.clipboard?.writeText(text);
+    setCopiedKey(key);
+    window.setTimeout(() => setCopiedKey((c) => (c === key ? null : c)), 1500);
+  };
 
   // Only the real owner can open/close the lobby (the RPC enforces it too).
   const isOwner = !session || !live.ownerId || session.id === live.ownerId;
@@ -101,13 +108,6 @@ export function ProjectMembers({
 
   const members = live.collaborators ?? [];
   const youAreOwner = true; // local-first: the signed-in user owns their copy
-
-  const invite = () => {
-    if (!name.trim()) return;
-    addCollaborator(live.id, name, role);
-    setName("");
-    setRole("editor");
-  };
 
   return (
     <div className="absolute inset-0 z-30 grid place-items-center p-6">
@@ -201,24 +201,76 @@ export function ProjectMembers({
               </div>
               {live.published && live.joinCode ? (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-center font-mono text-[15px] tracking-[0.2em] text-violet-100">
-                      {live.joinCode}
-                    </code>
+                  <div>
+                    <div className="mb-1 text-[10px] uppercase tracking-wider text-white/35">
+                      Код проекта
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-center font-mono text-[15px] tracking-[0.2em] text-violet-100">
+                        {live.joinCode}
+                      </code>
+                      <button
+                        onClick={() => copyText(live.joinCode ?? "", "code")}
+                        className="rounded-lg border border-white/10 px-3 py-2 text-[12px] text-white/70 hover:bg-white/5"
+                      >
+                        {copiedKey === "code" ? "✓" : "Копировать"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {sharedPass && (
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-white/35">
+                        <span>Пароль</span>
+                        <button
+                          onClick={() => setShowPass((v) => !v)}
+                          className="rounded px-1 text-[10px] normal-case tracking-normal text-white/45 hover:text-violet-200"
+                        >
+                          {showPass ? "скрыть" : "показать"}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-center font-mono text-[14px] text-violet-100">
+                          {showPass ? sharedPass : "•".repeat(Math.min(sharedPass.length, 12))}
+                        </code>
+                        <button
+                          onClick={() => copyText(sharedPass, "pass")}
+                          className="rounded-lg border border-white/10 px-3 py-2 text-[12px] text-white/70 hover:bg-white/5"
+                        >
+                          {copiedKey === "pass" ? "✓" : "Копировать"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] leading-relaxed text-white/40">
+                    {sharedPass
+                      ? "Код и пароль показаны выше — отправьте оба."
+                      : "Пароль не показывается после перезагрузки. Откройте лобби заново, чтобы задать новый."}
+                  </p>
+
+                  <div className="rounded-lg border border-white/10 bg-black/15 p-2.5">
+                    <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-wider text-white/30">
+                      <span>Приглашение</span>
+                      <span className="text-white/25">для отправки</span>
+                    </div>
+                    <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-white/65">
+{`Приглашаю в проект «${live.name}» в CHRONO.
+
+Код: ${live.joinCode}${sharedPass ? `\nПароль: ${sharedPass}` : `\nПароль: отправлю отдельно`}
+
+Открой CHRONO → «Войти по коду», введи код и пароль.`}
+                    </pre>
                     <button
                       onClick={() => {
-                        navigator.clipboard?.writeText(live.joinCode ?? "");
-                        setCopied(true);
-                        window.setTimeout(() => setCopied(false), 1500);
+                        const text = `Приглашаю в проект «${live.name}» в CHRONO.\n\nКод: ${live.joinCode}${sharedPass ? `\nПароль: ${sharedPass}` : `\nПароль: отправлю отдельно`}\n\nОткрой CHRONO → «Войти по коду», введи код и пароль.`;
+                        copyText(text, "invite");
                       }}
-                      className="rounded-lg border border-white/10 px-3 py-2 text-[12px] text-white/70 hover:bg-white/5"
+                      className="mt-2 w-full rounded-lg border border-violet-400/30 bg-violet-500/[0.08] px-3 py-1.5 text-[12px] text-violet-100/85 hover:bg-violet-500/15"
                     >
-                      {copied ? "Скопировано" : "Копировать"}
+                      {copiedKey === "invite" ? "✓ Скопировано" : "Скопировать приглашение"}
                     </button>
                   </div>
-                  <p className="text-[11px] leading-relaxed text-white/40">
-                    Передайте код и пароль — по ним присоединяются к проекту на любом устройстве.
-                  </p>
 
                   {/* lobby members */}
                   {lobbyMembers.length > 0 && (
@@ -250,7 +302,11 @@ export function ProjectMembers({
                   )}
 
                   <button
-                    onClick={() => void unpublishLobby(live.id)}
+                    onClick={() => {
+                      setSharedPass("");
+                      setShowPass(false);
+                      void unpublishLobby(live.id);
+                    }}
                     className="text-[12px] text-rose-300/70 hover:text-rose-300"
                   >
                     Закрыть доступ
@@ -264,19 +320,29 @@ export function ProjectMembers({
                   </p>
                   <div className="flex items-center gap-2">
                     <input
-                      type="password"
+                      type={showPass ? "text" : "password"}
                       value={lobbyPass}
                       onChange={(e) => setLobbyPass(e.target.value)}
-                      placeholder="Пароль для входа"
+                      placeholder="Пароль для входа (мин. 3 символа)"
                       className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 outline-none focus:border-violet-400/40"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass((v) => !v)}
+                      title={showPass ? "Скрыть пароль" : "Показать пароль"}
+                      className="rounded-lg border border-white/10 px-2.5 py-2 text-[11px] text-white/55 hover:bg-white/5"
+                    >
+                      {showPass ? "скрыть" : "показать"}
+                    </button>
                     <button
                       disabled={lobbyBusy || lobbyPass.trim().length < 3}
                       onClick={async () => {
                         setLobbyBusy(true);
                         setLobbyError(null);
+                        const pw = lobbyPass.trim();
                         try {
-                          await publishLobby(live.id, lobbyPass.trim());
+                          await publishLobby(live.id, pw);
+                          setSharedPass(pw);
                           setLobbyPass("");
                         } catch (e) {
                           setLobbyError(`Не удалось открыть лобби: ${errMessage(e)}`);
@@ -310,56 +376,6 @@ export function ProjectMembers({
             </div>
           ) : null}
 
-          {/* invite */}
-          <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
-            <div className="mb-2 text-[12px] font-medium text-white/60">
-              Пригласить по Discord-нику
-            </div>
-            {friends.filter(
-              (f) => !members.some((m) => m.name.toLowerCase() === f.name.toLowerCase()),
-            ).length > 0 && (
-              <div className="mb-2.5 flex flex-wrap gap-1.5">
-                {friends
-                  .filter(
-                    (f) => !members.some((m) => m.name.toLowerCase() === f.name.toLowerCase()),
-                  )
-                  .map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => addCollaborator(live.id, f.name, role)}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[12px] text-white/70 transition-colors hover:border-violet-400/40 hover:text-white/90"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      {f.name}
-                    </button>
-                  ))}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && invite()}
-                placeholder="username или username#0000"
-                className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 outline-none focus:border-violet-400/40"
-              />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
-                className="rounded-lg border border-white/10 bg-[#171228] px-2 py-2 text-[12px] text-white/75 outline-none focus:border-violet-400/40"
-              >
-                <option value="admin">Администратор</option>
-                <option value="editor">Редактор</option>
-                <option value="viewer">Наблюдатель</option>
-              </select>
-              <button
-                onClick={invite}
-                className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-[13px] font-medium text-white hover:scale-[1.02] active:scale-95"
-              >
-                +
-              </button>
-            </div>
-          </div>
         </div>
       </motion.div>
 

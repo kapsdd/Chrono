@@ -13,8 +13,9 @@ import type {
 } from "@/lib/types";
 import { parseInput } from "@/lib/parseInput";
 import { repo } from "@/lib/repo";
-import { enqueue, pendingWrites, readCache, writeCache } from "@/lib/sync";
+import { enqueue, flush, pendingWrites, readCache, writeCache } from "@/lib/sync";
 import { supabase } from "@/lib/supabase";
+import { DEFAULT_KANBAN_COLUMNS, normalizeKanbanColumns } from "@/lib/kanban";
 
 // Persistence: Supabase, keyed on the signed-in Discord profile (owner_id =
 // auth.uid()). Mutations update local state optimistically and write through to
@@ -30,6 +31,7 @@ export type ViewId =
   | "plans"
   | "calendar"
   | "habits"
+  | "notes"
   | "project"
   | "noproject"
   | "someday"
@@ -74,9 +76,12 @@ interface ChronoState {
   deleteTask: (id: string) => Promise<void>;
   setTaskDue: (id: string, due: string | null) => void;
   setPriority: (id: string, priority: Priority) => void;
+  setTaskNote: (id: string, note: string) => void;
   setTaskOrder: (id: string, order: number) => void;
   // project view + sharing
   setProjectView: (projectId: string, view: ProjectView) => void;
+  setKanbanColumn: (projectId: string, priority: Priority, label: string, color: string) => void;
+  resetKanbanColumns: (projectId: string) => void;
   addCollaborator: (projectId: string, name: string, role?: Role) => void;
   setCollaboratorRole: (projectId: string, collaboratorId: string, role: Role) => void;
   removeCollaborator: (projectId: string, collaboratorId: string) => void;
@@ -160,6 +165,19 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     }
   };
 
+  // Writes created before the profile finishes loading (ownerId still null).
+  // Rather than silently dropping them — which left rows only in memory and is
+  // the root cause of "project missing" on publish — we stash a closure here and
+  // replay it the moment ownerId resolves (see reload()), so every create still
+  // reaches the DB. Each closure stamps the now-known owner onto its payload.
+  let deferred: Array<(owner: string) => void> = [];
+  const flushDeferred = (owner: string) => {
+    if (!deferred.length) return;
+    const pending = deferred;
+    deferred = [];
+    pending.forEach((fn) => fn(owner));
+  };
+
   // Snapshot the local data into the offline cache for instant next-launch load.
   const cache = () => {
     if (!ownerId) return;
@@ -168,17 +186,22 @@ export const useChronoStore = create<ChronoState>((set, get) => {
   };
 
   // Write-through helpers: update the offline queue (which writes through to
-  // Supabase, or retries later if offline), then refresh the local cache.
+  // Supabase, or retries later if offline), then refresh the local cache. When
+  // ownerId isn't known yet, defer the enqueue instead of dropping it.
   const saveProject = (p: Project) => {
     if (ownerId) enqueue({ k: "upProject", project: p, owner: ownerId });
+    else deferred.push((owner) => enqueue({ k: "upProject", project: { ...p, ownerId: p.ownerId ?? owner }, owner }));
     cache();
   };
   const saveTask = (t: Task) => {
     if (ownerId) enqueue({ k: "upTask", task: t, owner: ownerId });
+    else deferred.push((owner) => enqueue({ k: "upTask", task: t, owner }));
     cache();
   };
   const saveTasks = (tasks: Task[]) => {
-    if (ownerId && tasks.length) enqueue({ k: "upTasks", tasks, owner: ownerId });
+    if (!tasks.length) return;
+    if (ownerId) enqueue({ k: "upTasks", tasks, owner: ownerId });
+    else deferred.push((owner) => enqueue({ k: "upTasks", tasks, owner }));
     cache();
   };
 
@@ -191,11 +214,24 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       set({ tasks: [], projects: [], friends: [], ready: true });
       return;
     }
+    // The profile is now known — replay any writes made before it loaded so
+    // they reach the DB instead of living only in memory.
+    flushDeferred(id);
     // Paint cached data immediately (offline-first), then reconcile with the
     // server. If the fetch fails (offline), the cache stays on screen.
     const cached = readCache(id);
     if (cached) set({ ...cached, ready: true });
     try {
+      // Drain writes queued in a previous session BEFORE pulling the snapshot.
+      // Otherwise a delete that never reached the server (e.g. the app closed
+      // before its request finished) gets undone when the still-present row
+      // comes back in fetchAll. If writes remain queued afterwards (offline),
+      // keep the optimistic cache rather than reconciling against stale data.
+      await flush();
+      if (pendingWrites() > 0) {
+        set({ ready: true });
+        return;
+      }
       const snap = await repo.fetchAll();
       set({ ...snap, ready: true });
       writeCache(id, snap);
@@ -252,6 +288,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       name: trimmed,
       shareId: uid(),
       color,
+      kanbanColumns: normalizeKanbanColumns(),
       createdAt: nowIso(),
     };
     set((s) => ({ projects: [...s.projects, project] }));
@@ -365,6 +402,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         parentId,
         projectId,
         tags: parsed.tags,
+        note: "",
         order: minOrder - 1,
         createdAt: nowIso(),
       };
@@ -459,12 +497,33 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       patchTask(id, (t) => ({ ...t, priority }));
     },
 
+    setTaskNote: (id, note) => {
+      patchTask(id, (t) => ({ ...t, note }));
+    },
+
     setTaskOrder: (id, order) => {
       patchTask(id, (t) => ({ ...t, order }));
     },
 
     setProjectView: (projectId, view) => {
       patchProject(projectId, (p) => ({ ...p, view }));
+    },
+
+    setKanbanColumn: (projectId, priority, label, color) => {
+      const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : "#64748b";
+      patchProject(projectId, (p) => ({
+        ...p,
+        kanbanColumns: normalizeKanbanColumns(p.kanbanColumns).map((c) =>
+          c.priority === priority ? { ...c, label: label.trim() || c.label, color: safeColor } : c,
+        ),
+      }));
+    },
+
+    resetKanbanColumns: (projectId) => {
+      patchProject(projectId, (p) => ({
+        ...p,
+        kanbanColumns: DEFAULT_KANBAN_COLUMNS.map((c) => ({ ...c })),
+      }));
     },
 
     addCollaborator: (projectId, name, role = "editor") => {
@@ -554,6 +613,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const friend: Friend = { id: uid(), name: trimmed, avatar, addedAt: nowIso() };
       set((s) => ({ friends: [...s.friends, friend] }));
       if (ownerId) enqueue({ k: "upFriend", friend, owner: ownerId });
+      else deferred.push((owner) => enqueue({ k: "upFriend", friend, owner }));
       cache();
     },
 
@@ -584,9 +644,31 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     publishLobby: async (projectId, password) => {
       // Throws on failure so the UI can surface the real reason (missing RPC =
       // migration not applied, or auth error = not signed in).
+      const project = get().projects.find((p) => p.id === projectId);
+      if (!project) throw new Error("Проект не найден");
+      if (!ownerId) throw new Error("Сначала войдите в аккаунт");
+      // Capture into a const so the type stays `string` inside the closure below
+      // (a captured `let` widens back to `string | null`).
+      const owner = ownerId;
+
+      // The publish_project RPC scopes its UPDATE to (id, owner_id = auth.uid()).
+      // If the project's row isn't in the DB yet it matches 0 rows and raises
+      // "not owner or project missing". That happens when the create write is
+      // still queued, or the project was created before the profile loaded (so
+      // saveProject skipped the enqueue). Drain the queue and write the row
+      // through synchronously before publishing, preserving the real owner.
+      await flush();
+      await repo.upsertProject({ ...project, ownerId: project.ownerId ?? owner }, owner);
+
       const code = makeJoinCode();
       await repo.publishProject(projectId, code, password);
-      patchProject(projectId, (p) => ({ ...p, published: true, joinCode: code, shared: true }));
+      patchProject(projectId, (p) => ({
+        ...p,
+        ownerId: p.ownerId ?? owner,
+        published: true,
+        joinCode: code,
+        shared: true,
+      }));
       return code;
     },
 

@@ -16,6 +16,12 @@ create table if not exists public.projects (
   shared        boolean not null default false,
   collaborators jsonb not null default '[]'::jsonb,
   view          text not null default 'list',
+  kanban_columns jsonb not null default '[
+    {"priority":3,"label":"Срочно","color":"#fb7185"},
+    {"priority":2,"label":"Высокий","color":"#f59e0b"},
+    {"priority":1,"label":"Средний","color":"#a78bfa"},
+    {"priority":0,"label":"Без приоритета","color":"#64748b"}
+  ]'::jsonb,
   created_at    timestamptz not null default now()
 );
 
@@ -36,6 +42,7 @@ create table if not exists public.tasks (
   "order"      double precision,
   due          timestamptz,
   collapsed    boolean not null default false,
+  note         text,
   created_at   timestamptz not null default now()
 );
 

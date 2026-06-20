@@ -57,6 +57,14 @@ export function CompletedSection({ tasks }: { tasks: Task[] }) {
                   >
                     {t.title}
                   </span>
+                  {t.note?.trim() && (
+                    <span
+                      title={t.note}
+                      className="hidden max-w-[40%] truncate rounded-md border border-amber-300/15 bg-amber-400/[0.06] px-1.5 py-0.5 text-[10.5px] text-amber-100/55 sm:inline"
+                    >
+                      {t.note.replace(/\s+/g, " ").slice(0, 60)}
+                    </span>
+                  )}
                   <button
                     onClick={() => void deleteTask(t.id)}
                     title="Удалить"

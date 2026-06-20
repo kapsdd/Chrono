@@ -23,10 +23,11 @@ datasource db {
 }
 
 model Project {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  name          String   @unique
+  kanbanColumns String?
+  tasks         Task[]
+  createdAt     DateTime @default(now())
 }
 
 model Task {
@@ -34,6 +35,10 @@ model Task {
   title       String
   isCompleted Boolean @default(false)
   priority    Int     @default(0) // 0..3
+  note        String?
+  timeSpent   Int     @default(0)
+  recurrence  String?
+  streak      Int     @default(0)
 
   // self-relation → infinite nesting
   parentId String?

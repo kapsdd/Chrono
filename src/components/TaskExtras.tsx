@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Recurrence, TaskNode } from "@/lib/types";
+import type { Recurrence, Task, TaskNode } from "@/lib/types";
 import { useChronoStore } from "@/store/useChronoStore";
 import { Icon } from "./icons";
 
@@ -113,6 +113,99 @@ export function TimeBadge({ seconds }: { seconds: number }) {
     <span className="rounded-md bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/50">
       {fmtDuration(seconds)}
     </span>
+  );
+}
+
+export function NoteControl({ node }: { node: Pick<Task, "id" | "note"> }) {
+  const setTaskNote = useChronoStore((s) => s.setTaskNote);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(node.note ?? "");
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const hasNote = Boolean(node.note?.trim());
+
+  useEffect(() => {
+    if (!open) setDraft(node.note ?? "");
+  }, [node.note, open]);
+
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(window.innerWidth - 300, r.right - 280)) });
+      setDraft(node.note ?? "");
+    }
+    setOpen((v) => !v);
+  };
+
+  const save = () => {
+    setTaskNote(node.id, draft.trim());
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        title={hasNote ? "Открыть заметку" : "Добавить заметку"}
+        className={`grid h-6 w-6 place-items-center rounded-md transition-colors ${
+          hasNote ? "text-amber-200" : "text-white/40 hover:bg-white/5 hover:text-violet-300"
+        }`}
+      >
+        <span className="text-[13px] leading-none">≡</span>
+      </button>
+
+      {open && pos && typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[80]" onClick={save} />
+            <div
+              className="app-window fixed z-[81] w-72 rounded-xl border border-white/10 p-3 shadow-neon-strong"
+              style={{ top: pos.top, left: pos.left }}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-[12px] font-medium text-white/70">Заметка</div>
+                <button
+                  onClick={() => {
+                    setDraft("");
+                    setTaskNote(node.id, "");
+                    setOpen(false);
+                  }}
+                  className="rounded-md px-1.5 py-0.5 text-[11px] text-white/35 hover:bg-white/5 hover:text-rose-300"
+                >
+                  Очистить
+                </button>
+              </div>
+              <textarea
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    save();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setOpen(false);
+                  }
+                }}
+                placeholder="Контекст, ссылки, решение..."
+                className="h-32 w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] leading-relaxed text-white/85 outline-none placeholder:text-white/25 focus:border-violet-400/40"
+              />
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={save}
+                  className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-[12px] font-medium text-white"
+                >
+                  Сохранить
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
 

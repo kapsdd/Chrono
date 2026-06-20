@@ -50,13 +50,8 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
         <div className="h-8 w-8 overflow-hidden rounded-lg bg-black shadow-[0_4px_14px_rgba(139,92,246,0.5)]">
           <img src={APP_ICON} alt="CHRONO" className="h-full w-full object-cover" draggable={false} />
         </div>
-        <div className="leading-tight">
-          <div className="text-[15px] font-semibold tracking-wide text-white/90">
-            CHRONO
-          </div>
-          <div className="font-mono text-[9px] tracking-widest text-white/30">
-            TASK · v0.1
-          </div>
+        <div className="mt-1.5 text-[15px] font-semibold tracking-wide text-white/90">
+          CHRONO
         </div>
       </div>
 
@@ -81,6 +76,12 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
             count={habitCount}
             active={activeView === "habits"}
             onClick={() => setView("habits")}
+          />
+          <NavItem
+            icon="note"
+            label="Заметки"
+            active={activeView === "notes"}
+            onClick={() => setView("notes")}
           />
         </div>
 
