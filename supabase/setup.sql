@@ -147,6 +147,25 @@ as $cw$
   );
 $cw$;
 
+-- Может ли пользователь ВИДЕТЬ задачи проекта: владелец проекта ИЛИ любой
+-- участник (включая viewer). is_project_member один не подходит — владелец
+-- проекта в эту таблицу не пишется и без этой функции его SELECT не видел
+-- задачи, созданные другими участниками — отсюда и «не синхронизируется».
+create or replace function public.can_access_project(p_project uuid, p_user uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $access$
+  select exists (
+    select 1 from public.projects p
+    where p.id = p_project and p.owner_id = p_user
+  ) or exists (
+    select 1 from public.project_members m
+    where m.project_id = p_project and m.user_id = p_user
+  );
+$access$;
+
 -- ---------------------------------------------------------------------------
 -- Row-Level Security
 -- ---------------------------------------------------------------------------
@@ -187,7 +206,7 @@ drop policy if exists "delete own or shared tasks" on public.tasks;
 create policy "read own or shared tasks" on public.tasks
   for select using (
     auth.uid() = owner_id
-    or (project_id is not null and public.is_project_member(project_id, auth.uid()))
+    or (project_id is not null and public.can_access_project(project_id, auth.uid()))
   );
 -- Запись в задачу общего проекта требует роль editor (или владельца проекта).
 -- Личные задачи (project_id is null) — только сам владелец строки.
