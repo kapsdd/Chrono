@@ -69,6 +69,9 @@ interface ChronoState {
   createProject: (name: string) => Promise<Project | null>;
   renameProject: (id: string, name: string) => void;
   deleteProject: (id: string) => Promise<void>;
+  /** Leave a shared project: remove our membership locally + on the server.
+   *  Used when a non-owner clicks «удалить» on a project they only joined. */
+  leaveProject: (id: string) => Promise<void>;
   addFromInput: (raw: string, parentId?: string | null) => Promise<void>;
   renameTask: (id: string, title: string) => void;
   toggleComplete: (id: string) => Promise<void>;
@@ -386,6 +389,15 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     deleteProject: async (id) => {
+      // If this is a shared project we only joined — not own — the server
+      // will silently reject the DELETE via RLS (owner-only) and the row will
+      // reappear on the next refresh. Route to leaveProject instead so the
+      // membership is removed cleanly and the project actually disappears.
+      const project = get().projects.find((p) => p.id === id);
+      if (project && ownerId && project.ownerId && project.ownerId !== ownerId) {
+        await get().leaveProject(id);
+        return;
+      }
       // Drop the project and its tasks locally; the DB cascades tasks via FK.
       set((s) => ({
         projects: s.projects.filter((p) => p.id !== id),
@@ -396,6 +408,28 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       enqueue({ k: "delProject", id });
       cache();
       saveNav();
+    },
+
+    leaveProject: async (id) => {
+      if (!ownerId) return;
+      const project = get().projects.find((p) => p.id === id);
+      if (!project) return;
+      set((s) => ({
+        projects: s.projects.filter((p) => p.id !== id),
+        tasks: s.tasks.filter((t) => t.projectId !== id),
+        activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
+        activeView: s.activeProjectId === id ? "plans" : s.activeView,
+      }));
+      cache();
+      saveNav();
+      try {
+        await repo.leaveProject(id, ownerId);
+      } catch (e) {
+        console.error("leaveProject", e);
+        // If the server rejected (we weren't actually a member), pull truth
+        // back so the sidebar isn't lying.
+        await reload();
+      }
     },
 
     addFromInput: async (raw, parentId = null) => {
@@ -701,6 +735,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
 
     joinLobby: async (code, password, name, avatar) => {
       try {
+        // Drain any pending local writes BEFORE pulling the snapshot — a
+        // queued delete that hasn't reached the server yet would otherwise
+        // be "undone" by fetchAll returning the still-present row (this is
+        // why locally-deleted projects appeared to come back after joining).
+        await flush();
         await repo.joinProject(code.trim(), password, name, avatar);
         // Pull the snapshot directly instead of going through reload(): reload
         // short-circuits if any queued write is still pending, which would

@@ -66,7 +66,7 @@ export function ProjectMembers({
   const publishLobby = useChronoStore((s) => s.publishLobby);
   const unpublishLobby = useChronoStore((s) => s.unpublishLobby);
   const updateLobbyMemberRole = useChronoStore((s) => s.updateLobbyMemberRole);
-  const refresh = useChronoStore((s) => s.refresh);
+  const leaveProjectAction = useChronoStore((s) => s.leaveProject);
   // Re-read the live project so the list updates as we mutate.
   const live = useChronoStore((s) => s.projects.find((p) => p.id === project.id)) ?? project;
 
@@ -147,8 +147,7 @@ export function ProjectMembers({
 
   const leave = async () => {
     if (!session) return;
-    await repo.leaveProject(live.id, session.id);
-    await refresh(); // the project leaves our list
+    await leaveProjectAction(live.id);
     onClose();
   };
 

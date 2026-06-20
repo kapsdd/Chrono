@@ -45,7 +45,7 @@ type Op =
 
 const QUEUE_KEY = "chrono.queue";
 let queue: Op[] = loadQueue();
-let flushing = false;
+let activeFlush: Promise<void> | null = null;
 let wired = false;
 
 function loadQueue(): Op[] {
@@ -97,26 +97,35 @@ export function syncTick(): number {
   return drainTick;
 }
 
-export async function flush(): Promise<void> {
-  if (flushing) return;
-  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-  flushing = true;
-  try {
-    while (queue.length) {
-      try {
-        await runOp(queue[0]);
-      } catch {
-        // Stop on the first failure (likely offline); keep the rest queued and
-        // try again on the next reconnect / enqueue.
-        break;
-      }
-      queue.shift();
-      persistQueue();
-    }
-    drainTick++;
-  } finally {
-    flushing = false;
+// Always returns a promise tied to the currently-running drain. Callers that
+// `await flush()` are guaranteed to wait for it, even if another path already
+// kicked off a flush — important for joinLobby + reload, which must not run
+// fetchAll while a pending delete is still in transit (otherwise the deleted
+// row comes back from the server).
+export function flush(): Promise<void> {
+  if (activeFlush) return activeFlush;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return Promise.resolve();
   }
+  activeFlush = (async () => {
+    try {
+      while (queue.length) {
+        try {
+          await runOp(queue[0]);
+        } catch {
+          // Stop on the first failure (likely offline); keep the rest queued
+          // and try again on the next reconnect / enqueue.
+          break;
+        }
+        queue.shift();
+        persistQueue();
+      }
+      drainTick++;
+    } finally {
+      activeFlush = null;
+    }
+  })();
+  return activeFlush;
 }
 
 /** Enqueue a write, attempt it now, and persist it if it can't go through yet. */

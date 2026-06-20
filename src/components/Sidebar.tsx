@@ -7,6 +7,7 @@ import { SPRING } from "@/lib/motion";
 import { Icon, type IconName } from "./icons";
 import { APP_ICON } from "@/lib/brand";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
+import { useSession } from "@/store/useSession";
 
 function focusSmartInput() {
   const el = document.getElementById("smart-input") as HTMLInputElement | null;
@@ -23,6 +24,7 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
   const createProject = useChronoStore((s) => s.createProject);
   const renameProject = useChronoStore((s) => s.renameProject);
   const deleteProject = useChronoStore((s) => s.deleteProject);
+  const session = useSession((s) => s.session);
 
   const [newName, setNewName] = useState("");
 
@@ -100,18 +102,22 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
         </div>
         {sharedProjects.length > 0 ? (
           <div className="flex flex-col gap-0.5">
-            {sharedProjects.map((p) => (
-              <ProjectRow
-                key={p.id}
-                name={p.name}
-                color={p.color}
-                count={activeCount(p.id)}
-                active={activeView === "project" && activeProjectId === p.id}
-                onOpen={() => setActiveProject(p.id)}
-                onRename={(name) => renameProject(p.id, name)}
-                onDelete={() => void deleteProject(p.id)}
-              />
-            ))}
+            {sharedProjects.map((p) => {
+              const youOwn = !p.ownerId || (session?.id ?? "") === p.ownerId;
+              return (
+                <ProjectRow
+                  key={p.id}
+                  name={p.name}
+                  color={p.color}
+                  count={activeCount(p.id)}
+                  active={activeView === "project" && activeProjectId === p.id}
+                  onOpen={() => setActiveProject(p.id)}
+                  onRename={(name) => renameProject(p.id, name)}
+                  onDelete={() => void deleteProject(p.id)}
+                  youOwn={youOwn}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="px-3 py-1 text-[11px] text-white/25">
@@ -132,6 +138,7 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
               onOpen={() => setActiveProject(p.id)}
               onRename={(name) => renameProject(p.id, name)}
               onDelete={() => void deleteProject(p.id)}
+              youOwn
             />
           ))}
           <div className="flex items-center gap-2.5 px-3 py-1.5">
@@ -208,6 +215,7 @@ function ProjectRow({
   onOpen,
   onRename,
   onDelete,
+  youOwn,
 }: {
   name: string;
   color?: string;
@@ -216,7 +224,12 @@ function ProjectRow({
   onOpen: () => void;
   onRename: (name: string) => void;
   onDelete: () => void;
+  /** Whether the signed-in user owns this project. Controls whether the trash
+   *  button reads as «Удалить» or «Покинуть». */
+  youOwn: boolean;
 }) {
+  const removeLabel = youOwn ? "Удалить" : "Покинуть";
+  const removeTitle = youOwn ? "Удалить проект" : "Покинуть проект";
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const [confirm, setConfirm] = useState(false);
@@ -283,7 +296,7 @@ function ProjectRow({
             }}
             className="rounded px-1.5 py-0.5 text-[11px] text-rose-300 hover:bg-rose-500/15"
           >
-            Удалить
+            {removeLabel}
           </button>
           <button
             onClick={() => setConfirm(false)}
@@ -306,7 +319,7 @@ function ProjectRow({
           </button>
           <button
             onClick={() => setConfirm(true)}
-            title="Удалить проект"
+            title={removeTitle}
             className="grid h-6 w-6 place-items-center rounded-md text-white/40 hover:bg-white/5 hover:text-rose-300"
           >
             ✕
