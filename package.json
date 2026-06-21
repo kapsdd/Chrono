@@ -50,8 +50,10 @@
       "out/**/*",
       "okno/icon.png",
       "package.json",
-      ".env",
       "!**/node_modules/**"
+    ],
+    "extraFiles": [
+      { "from": ".env", "to": ".env" }
     ],
     "win": {
       "target": "nsis",
