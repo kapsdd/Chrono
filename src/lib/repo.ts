@@ -282,29 +282,30 @@ export const repo = {
 
   async publishProject(projectId: string, code: string, password: string, project: Project, ownerId: string) {
     console.log("[repo] publishProject start", projectId, code);
-    const bcryptHash = await hashPassword(password);
+    const hash = await hashPassword(password);
     console.log("[repo] password hashed");
-    const updates: Record<string, unknown> = {};
-    updates[`${joinCodes()}/${code}`] = {
+    await set(ref(db, `${joinCodes()}/${code}`), {
       project_id: projectId,
-      password_hash: bcryptHash,
+      password_hash: hash,
       owner_id: ownerId,
-    };
-    updates[sharedMeta(projectId)] = {
+    });
+    console.log("[repo] joinCode written");
+    await set(ref(db, sharedMeta(projectId)), {
       name: project.name,
       color: project.color ?? null,
       owner_id: ownerId,
       view: project.view ?? "list",
       kanban_columns: normalizeKanbanColumns(project.kanbanColumns),
       created_at: project.createdAt,
-    };
-    updates[`${sharedMembers(projectId)}/${ownerId}`] = {
+    });
+    console.log("[repo] meta written");
+    await set(ref(db, `${sharedMembers(projectId)}/${ownerId}`), {
       role: "owner",
       name: project.collaborators?.find((c) => c.role === "owner")?.name ?? "Владелец",
       avatar: project.collaborators?.find((c) => c.role === "owner")?.avatar ?? null,
       joined_at: new Date().toISOString(),
-    };
-    await update(ref(db), updates);
+    });
+    console.log("[repo] publishProject done");
   },
 
   async unpublishProject(projectId: string) {
@@ -364,44 +365,17 @@ export const repo = {
 };
 
 // ---- password hashing (Web Crypto API) ------------------------------------
-// Firebase RTDB can't use bcrypt, so we use PBKDF2 via Web Crypto.
 async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
-    keyMaterial,
-    256,
-  );
-  const hash = new Uint8Array(bits);
-  const saltHex = Array.from(salt).map((b) => b.toString(16).padStart(2, "0")).join("");
-  const hashHex = Array.from(hash).map((b) => b.toString(16).padStart(2, "0")).join("");
-  return `${saltHex}:${hashHex}`;
+  const encoded = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [saltHex, hashHex] = stored.split(":");
-  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
-    keyMaterial,
-    256,
-  );
-  const hash = Array.from(new Uint8Array(bits))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return hash === hashHex;
+  const encoded = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = new Uint8Array(hashBuffer);
+  const hashHex = Array.from(hashArray).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return hashHex === stored;
 }
