@@ -146,6 +146,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
   let ownerId: string | null = null;
   let subscribed = false;
   let realtimeListeners: Array<{ path: string; unsub: () => void }> = [];
+  let knownProjectIds = new Set<string>();
 
   const saveNav = () => {
     if (typeof window === "undefined") return;
@@ -193,6 +194,10 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const snap = await repo.fetchAll(id);
       set({ ...snap, ready: true });
       writeCache(id, snap);
+      const newIds = new Set(snap.projects.map((p) => p.id));
+      const changed = newIds.size !== knownProjectIds.size || [...newIds].some((id) => !knownProjectIds.has(id));
+      knownProjectIds = newIds;
+      if (changed) setupRealtime();
     } catch (e) {
       console.error("Failed to load profile data", e);
       set({ ready: true });
@@ -221,6 +226,15 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     const userProjectsRef = ref(db, `users/${ownerId}/projects`);
     const unsub2 = onValue(userProjectsRef, scheduleReload);
     realtimeListeners.push({ path: `users/${ownerId}/projects`, unsub: () => off(userProjectsRef, "value", unsub2) });
+
+    const projects = get().projects;
+    for (const p of projects) {
+      if (p.published || p.shared) {
+        const stRef = ref(db, `shared/${p.id}/tasks`);
+        const unsubST = onValue(stRef, scheduleReload);
+        realtimeListeners.push({ path: `shared/${p.id}/tasks`, unsub: () => off(stRef, "value", unsubST) });
+      }
+    }
   };
 
   const findOrCreateProjectByName = (name: string): string | null => {
