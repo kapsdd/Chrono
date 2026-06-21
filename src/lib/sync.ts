@@ -113,8 +113,10 @@ export function flush(): Promise<void> {
         try {
           await runOp(queue[0]);
         } catch (e) {
-          console.error("[chrono.sync] op failed, queue stalled:", queue[0]?.k, e);
+          console.error("[chrono.sync] op failed:", queue[0]?.k, e);
           console.error("[chrono.sync] full op:", JSON.stringify(queue[0]));
+          queue.shift();
+          persistQueue();
           break;
         }
         queue.shift();

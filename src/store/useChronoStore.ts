@@ -357,18 +357,13 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     stopPoll();
     const tick = () => {
       if (!ownerId) return;
-      const hasShared = get().projects.some((p) => p.shared);
       const queued = pendingWrites();
-      if (hasShared && queued === 0) {
+      if (queued === 0) {
         void reload();
       } else {
-        console.debug(
-          "[chrono.poll] skip:",
-          hasShared ? "has shared" : "no shared",
-          queued > 0 ? `queued=${queued}` : "",
-        );
+        console.debug(`[chrono.poll] skip: queued=${queued}`);
       }
-      const interval = realtimeHealthy ? 8000 : 2000;
+      const interval = realtimeHealthy ? 8000 : 3000;
       pollTimer = window.setTimeout(tick, interval);
     };
     pollTimer = window.setTimeout(tick, realtimeHealthy ? 3500 : 1500);
