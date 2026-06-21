@@ -11,7 +11,7 @@ declare global {
       minimize?: () => void;
       toggleMaximize?: () => void;
       close?: () => void;
-      discordAuthCode?: (authUrl: string) => Promise<string | null>;
+      googleSignIn?: () => Promise<{ idToken: string | null; error: string | null }>;
     };
   }
 }

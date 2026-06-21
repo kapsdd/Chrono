@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import type { Session } from "@/lib/types";
 import {
-  signInWithPopup,
+  signInWithCredential,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signOut as fbSignOut,
   type User,
@@ -52,7 +53,25 @@ export const useSession = create<SessionState>((set, get) => ({
   loginWithDiscord: async () => {
     set({ pending: true, error: null });
     try {
-      await signInWithPopup(auth, googleProvider);
+      const isDesktop = !!window.chrono?.isDesktop;
+
+      if (isDesktop && window.chrono?.googleSignIn) {
+        const result = await window.chrono.googleSignIn();
+        if (result?.idToken) {
+          const credential = GoogleAuthProvider.credential(result.idToken);
+          await signInWithCredential(auth, credential);
+          return;
+        }
+        if (result?.error) {
+          set({ pending: false, error: `Ошибка: ${result.error}` });
+          return;
+        }
+        set({ pending: false, error: "Авторизация отменена." });
+        return;
+      }
+
+      const { signInWithRedirect } = await import("firebase/auth");
+      await signInWithRedirect(auth, googleProvider);
     } catch (e) {
       console.error("Login failed", e);
       if (get().session) return;
