@@ -6,7 +6,8 @@ import type { Project, Role } from "@/lib/types";
 import { useChronoStore } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
 import { repo } from "@/lib/repo";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/firebase";
+import { ref, onValue, off } from "firebase/database";
 import { errMessage } from "@/lib/errMessage";
 
 interface LobbyMember {
@@ -112,21 +113,10 @@ export function ProjectMembers({
   // a fresh list. RLS scopes the events to projects we can see.
   useEffect(() => {
     if (!live.published) return;
-    const ch = supabase
-      .channel(`lobby-${live.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "project_members",
-          filter: `project_id=eq.${live.id}`,
-        },
-        () => loadMembers(),
-      )
-      .subscribe();
+    const membersRef = ref(db, `shared/${live.id}/members`);
+    const unsub = onValue(membersRef, () => loadMembers());
     return () => {
-      void supabase.removeChannel(ch);
+      off(membersRef, "value", unsub);
     };
   }, [live.id, live.published, loadMembers]);
 

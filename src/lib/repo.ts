@@ -1,20 +1,43 @@
 "use client";
 
 import type { Friend, Project, Task } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import {
+  ref,
+  set,
+  update,
+  remove,
+  get,
+  child,
+  push,
+  query,
+  orderByChild,
+  equalTo,
+} from "firebase/database";
+import { db } from "@/lib/firebase";
 import { normalizeKanbanColumns } from "@/lib/kanban";
 
-// Translation layer between the app's camelCase domain objects and the
-// snake_case Supabase rows. Row-Level Security (owner_id = auth.uid()) scopes
-// every read and write to the signed-in Discord profile, so the same account
-// resolves to the same projects/tasks on any device.
+// Firebase Realtime Database paths:
+//   users/{uid}/projects/{projectId}  — personal + owned shared projects
+//   users/{uid}/tasks/{taskId}        — tasks created by this user
+//   users/{uid}/friends/{friendId}    — friends
+//   shared/{projectId}/tasks/{taskId} — tasks in a shared project (all members)
+//   shared/{projectId}/members/{uid}  — membership
+//   shared/{projectId}/meta           — project metadata for members
+//   joinCodes/{code}                  — maps lobby code → projectId + password
 
-// ---- projects -------------------------------------------------------------
-function projectToRow(p: Project, ownerId: string) {
+// ---- path helpers ----------------------------------------------------------
+const userProjects = (uid: string) => `users/${uid}/projects`;
+const userTasks = (uid: string) => `users/${uid}/tasks`;
+const userFriends = (uid: string) => `users/${uid}/friends`;
+const sharedTasks = (pid: string) => `shared/${pid}/tasks`;
+const sharedMembers = (pid: string) => `shared/${pid}/members`;
+const sharedMeta = (pid: string) => `shared/${pid}/meta`;
+const joinCodes = () => "joinCodes";
+
+// ---- project serialization -------------------------------------------------
+function projectToDB(p: Project, ownerId: string) {
   return {
     id: p.id,
-    // Preserve the real owner on member edits; fall back to the current user for
-    // brand-new projects that haven't been stamped yet.
     owner_id: p.ownerId ?? ownerId,
     name: p.name,
     share_id: p.shareId,
@@ -23,30 +46,31 @@ function projectToRow(p: Project, ownerId: string) {
     collaborators: p.collaborators ?? [],
     view: p.view ?? "list",
     kanban_columns: normalizeKanbanColumns(p.kanbanColumns),
+    published: p.published ?? false,
+    join_code: p.joinCode ?? null,
     created_at: p.createdAt,
   };
 }
 
-function rowToProject(r: Record<string, unknown>): Project {
+function dbToProject(r: Record<string, unknown>): Project {
   return {
     id: r.id as string,
     ownerId: (r.owner_id as string) ?? undefined,
     name: r.name as string,
-    shareId: r.share_id as string,
+    shareId: (r.share_id as string) ?? "",
     color: (r.color as string) ?? undefined,
     shared: (r.shared as boolean) ?? false,
     collaborators: (r.collaborators as Project["collaborators"]) ?? [],
     view: (r.view as Project["view"]) ?? "list",
     kanbanColumns: normalizeKanbanColumns(r.kanban_columns as Project["kanbanColumns"]),
-    // join_code only exists once migration 0002 is applied; tolerate its absence.
-    published: Boolean(r.join_code),
+    published: Boolean(r.published || r.join_code),
     joinCode: (r.join_code as string) ?? null,
-    createdAt: r.created_at as string,
+    createdAt: (r.created_at as string) ?? new Date().toISOString(),
   };
 }
 
-// ---- tasks ----------------------------------------------------------------
-function taskToRow(t: Task, ownerId: string) {
+// ---- task serialization ----------------------------------------------------
+function taskToDB(t: Task, ownerId: string) {
   return {
     id: t.id,
     owner_id: ownerId,
@@ -68,7 +92,7 @@ function taskToRow(t: Task, ownerId: string) {
   };
 }
 
-function rowToTask(r: Record<string, unknown>): Task {
+function dbToTask(r: Record<string, unknown>): Task {
   return {
     id: r.id as string,
     title: r.title as string,
@@ -77,7 +101,7 @@ function rowToTask(r: Record<string, unknown>): Task {
     parentId: (r.parent_id as string) ?? null,
     projectId: (r.project_id as string) ?? null,
     tags: (r.tags as string[]) ?? [],
-    createdAt: r.created_at as string,
+    createdAt: (r.created_at as string) ?? new Date().toISOString(),
     order: (r.order as number) ?? undefined,
     due: (r.due as string) ?? null,
     collapsed: (r.collapsed as boolean) ?? false,
@@ -89,24 +113,48 @@ function rowToTask(r: Record<string, unknown>): Task {
   };
 }
 
-// ---- friends --------------------------------------------------------------
-function friendToRow(f: Friend, ownerId: string) {
+// ---- friend serialization --------------------------------------------------
+function friendToDB(f: Friend) {
   return {
     id: f.id,
-    owner_id: ownerId,
     name: f.name,
     avatar: f.avatar ?? null,
-    created_at: f.addedAt,
+    added_at: f.addedAt,
   };
 }
 
-function rowToFriend(r: Record<string, unknown>): Friend {
+function dbToFriend(r: Record<string, unknown>): Friend {
   return {
     id: r.id as string,
     name: r.name as string,
     avatar: (r.avatar as string) ?? undefined,
-    addedAt: r.created_at as string,
+    addedAt: (r.added_at as string) ?? new Date().toISOString(),
   };
+}
+
+// ---- helpers ---------------------------------------------------------------
+async function getSnapshot<T>(
+  path: string,
+  mapper: (r: Record<string, unknown>) => T,
+): Promise<T[]> {
+  const snap = await get(ref(db, path));
+  if (!snap.exists()) return [];
+  const val = snap.val() as Record<string, Record<string, unknown>>;
+  return Object.values(val).map(mapper);
+}
+
+async function getSharedProjectIds(uid: string): Promise<string[]> {
+  const snap = await get(ref(db, joinCodes()));
+  if (!snap.exists()) return [];
+  const codes = snap.val() as Record<string, { project_id: string }>;
+  const projectIds = Object.values(codes).map((c) => c.project_id);
+  const memberChecks = await Promise.all(
+    projectIds.map(async (pid) => {
+      const memberSnap = await get(child(ref(db, sharedMembers(pid)), uid));
+      return memberSnap.exists() ? pid : null;
+    }),
+  );
+  return memberChecks.filter((p): p is string => p !== null);
 }
 
 export interface Snapshot {
@@ -116,130 +164,242 @@ export interface Snapshot {
 }
 
 export const repo = {
-  // Pull the whole profile in parallel. RLS filters to the current user.
-  async fetchAll(): Promise<Snapshot> {
-    const [projects, tasks, friends] = await Promise.all([
-      // select("*") rather than a fixed column list so the query still works if
-      // migration 0002 (which adds join_code) hasn't been applied yet. The
-      // bcrypt join_password is never mapped into app state by rowToProject.
-      supabase.from("projects").select("*").order("created_at", { ascending: true }),
-      supabase.from("tasks").select("*").order("order", { ascending: true, nullsFirst: true }),
-      supabase.from("friends").select("*").order("created_at", { ascending: true }),
-    ]);
-    if (projects.error) throw projects.error;
-    if (tasks.error) throw tasks.error;
-    if (friends.error) throw friends.error;
+  async fetchAll(uid: string): Promise<Snapshot> {
+    const [personalProjects, personalTasks, friends, sharedProjectIds] =
+      await Promise.all([
+        getSnapshot(`${userProjects(uid)}`, dbToProject),
+        getSnapshot(`${userTasks(uid)}`, dbToTask),
+        getSnapshot(`${userFriends(uid)}`, dbToFriend),
+        getSharedProjectIds(uid),
+      ]);
+
+    const sharedProjects: Project[] = [];
+    const sharedTasksAll: Task[] = [];
+
+    for (const pid of sharedProjectIds) {
+      const [metaSnap, tasksSnap] = await Promise.all([
+        get(ref(db, sharedMeta(pid))),
+        getSnapshot(`${sharedTasks(pid)}`, dbToTask),
+      ]);
+      if (metaSnap.exists()) {
+        const meta = metaSnap.val() as Record<string, unknown>;
+        sharedProjects.push(dbToProject({ ...meta, id: pid }));
+      }
+      sharedTasksAll.push(...tasksSnap);
+    }
+
+    const allProjects = [...personalProjects, ...sharedProjects];
+    const seen = new Set<string>(sharedTasksAll.map((t) => t.id));
+    const allTasks = [
+      ...sharedTasksAll,
+      ...personalTasks.filter((t) => !seen.has(t.id)),
+    ];
+
     return {
-      projects: (projects.data ?? []).map(rowToProject),
-      tasks: (tasks.data ?? []).map(rowToTask),
-      friends: (friends.data ?? []).map(rowToFriend),
+      projects: allProjects,
+      tasks: allTasks,
+      friends,
     };
   },
 
-  // Write methods throw on error so the offline sync queue can detect failures
-  // and retry them later (see lib/sync.ts).
   async upsertProject(p: Project, ownerId: string) {
-    const { error } = await supabase.from("projects").upsert(projectToRow(p, ownerId));
-    if (error) throw error;
+    await set(
+      ref(db, `${userProjects(ownerId)}/${p.id}`),
+      projectToDB(p, ownerId),
+    );
+    if (p.published && p.joinCode) {
+      const metaSnap = await get(ref(db, sharedMeta(p.id)));
+      if (metaSnap.exists()) {
+        await update(ref(db, sharedMeta(p.id)), {
+          name: p.name,
+          color: p.color ?? null,
+          view: p.view ?? "list",
+          kanban_columns: normalizeKanbanColumns(p.kanbanColumns),
+        });
+      }
+    }
   },
 
-  async deleteProject(id: string) {
-    // tasks cascade via the project_id FK (on delete cascade).
-    const { error } = await supabase.from("projects").delete().eq("id", id);
-    if (error) throw error;
+  async deleteProject(id: string, ownerId: string) {
+    await remove(ref(db, `${userProjects(ownerId)}/${id}`));
+    await remove(ref(db, sharedTasks(id)));
+    await remove(ref(db, sharedMembers(id)));
+    await remove(ref(db, sharedMeta(id)));
+    const codeSnap = await get(ref(db, joinCodes()));
+    if (codeSnap.exists()) {
+      const codes = codeSnap.val() as Record<string, { project_id: string }>;
+      for (const [code, data] of Object.entries(codes)) {
+        if (data.project_id === id) {
+          await remove(ref(db, `${joinCodes()}/${code}`));
+        }
+      }
+    }
   },
 
   async upsertTask(t: Task, ownerId: string) {
-    const { error } = await supabase.from("tasks").upsert(taskToRow(t, ownerId));
-    if (error) throw error;
+    const row = taskToDB(t, ownerId);
+    const updates: Record<string, unknown> = {};
+    updates[`${userTasks(ownerId)}/${t.id}`] = row;
+    if (t.projectId) {
+      updates[`${sharedTasks(t.projectId)}/${t.id}`] = row;
+    }
+    await update(ref(db), updates);
   },
 
   async upsertTasks(tasks: Task[], ownerId: string) {
     if (tasks.length === 0) return;
-    const { error } = await supabase
-      .from("tasks")
-      .upsert(tasks.map((t) => taskToRow(t, ownerId)));
-    if (error) throw error;
+    const updates: Record<string, unknown> = {};
+    for (const t of tasks) {
+      const row = taskToDB(t, ownerId);
+      updates[`${userTasks(ownerId)}/${t.id}`] = row;
+      if (t.projectId) {
+        updates[`${sharedTasks(t.projectId)}/${t.id}`] = row;
+      }
+    }
+    await update(ref(db), updates);
   },
 
-  async deleteTasks(ids: string[]) {
+  async deleteTasks(ids: string[], ownerId: string, taskMap?: Map<string, string | null>) {
     if (ids.length === 0) return;
-    const { error } = await supabase.from("tasks").delete().in("id", ids);
-    if (error) throw error;
+    const updates: Record<string, null> = {};
+    for (const id of ids) {
+      updates[`${userTasks(ownerId)}/${id}`] = null;
+      const pid = taskMap?.get(id);
+      if (pid) {
+        updates[`${sharedTasks(pid)}/${id}`] = null;
+      }
+    }
+    await update(ref(db), updates);
   },
 
   async upsertFriend(f: Friend, ownerId: string) {
-    const { error } = await supabase.from("friends").upsert(friendToRow(f, ownerId));
-    if (error) throw error;
+    await set(ref(db, `${userFriends(ownerId)}/${f.id}`), friendToDB(f));
   },
 
-  async deleteFriend(id: string) {
-    const { error } = await supabase.from("friends").delete().eq("id", id);
-    if (error) throw error;
+  async deleteFriend(id: string, ownerId: string) {
+    await remove(ref(db, `${userFriends(ownerId)}/${id}`));
   },
 
-  // ---- lobby (shared projects) -------------------------------------------
-  // Owner publishes a project to the lobby with a join code + password.
-  async publishProject(projectId: string, code: string, password: string) {
-    const { error } = await supabase.rpc("publish_project", {
-      p_project: projectId,
-      p_code: code,
-      p_password: password,
-    });
-    if (error) throw error;
+  async publishProject(projectId: string, code: string, password: string, project: Project, ownerId: string) {
+    const bcryptHash = await hashPassword(password);
+    const updates: Record<string, unknown> = {};
+    updates[`${joinCodes()}/${code}`] = {
+      project_id: projectId,
+      password_hash: bcryptHash,
+      owner_id: ownerId,
+    };
+    updates[sharedMeta(projectId)] = {
+      name: project.name,
+      color: project.color ?? null,
+      owner_id: ownerId,
+      view: project.view ?? "list",
+      kanban_columns: normalizeKanbanColumns(project.kanbanColumns),
+      created_at: project.createdAt,
+    };
+    updates[`${sharedMembers(projectId)}/${ownerId}`] = {
+      role: "owner",
+      name: project.collaborators?.find((c) => c.role === "owner")?.name ?? "Владелец",
+      avatar: project.collaborators?.find((c) => c.role === "owner")?.avatar ?? null,
+      joined_at: new Date().toISOString(),
+    };
+    await update(ref(db), updates);
   },
 
   async unpublishProject(projectId: string) {
-    const { error } = await supabase.rpc("unpublish_project", { p_project: projectId });
-    if (error) throw error;
+    const codeSnap = await get(ref(db, joinCodes()));
+    if (codeSnap.exists()) {
+      const codes = codeSnap.val() as Record<string, { project_id: string }>;
+      for (const [code, data] of Object.entries(codes)) {
+        if (data.project_id === projectId) {
+          await remove(ref(db, `${joinCodes()}/${code}`));
+        }
+      }
+    }
+    await remove(ref(db, sharedMeta(projectId)));
+    await remove(ref(db, sharedMembers(projectId)));
+    await remove(ref(db, sharedTasks(projectId)));
   },
 
-  // Join by code + password; resolves the joined project's id.
   async joinProject(code: string, password: string, name?: string, avatar?: string) {
-    const { data, error } = await supabase.rpc("join_project", {
-      p_code: code,
-      p_password: password,
-      p_name: name ?? null,
-      p_avatar: avatar ?? null,
-    });
-    if (error) throw error;
-    return data as string;
+    const codeSnap = await get(child(ref(db, joinCodes()), code));
+    if (!codeSnap.exists()) throw new Error("Неверный код");
+    const codeData = codeSnap.val() as {
+      project_id: string;
+      password_hash: string;
+      owner_id: string;
+    };
+    const valid = await verifyPassword(password, codeData.password_hash);
+    if (!valid) throw new Error("Неверный пароль");
+    return codeData.project_id;
   },
 
-  // Lobby members of a project (the owner is implicit, not in this table).
+  async addMember(projectId: string, uid: string, name?: string, avatar?: string) {
+    await set(ref(db, `${sharedMembers(projectId)}/${uid}`), {
+      role: "editor",
+      name: name ?? "Участник",
+      avatar: avatar ?? null,
+      joined_at: new Date().toISOString(),
+    });
+  },
+
   async fetchMembers(projectId: string) {
-    const { data, error } = await supabase
-      .from("project_members")
-      .select("user_id,role,name,avatar,joined_at")
-      .eq("project_id", projectId)
-      .order("joined_at", { ascending: true });
-    if (error) throw error;
-    return (data ?? []) as Array<{
-      user_id: string;
-      role: string;
-      name: string | null;
-      avatar: string | null;
-      joined_at: string;
-    }>;
+    return getSnapshot(`${sharedMembers(projectId)}`, (r: Record<string, unknown>) => ({
+      user_id: r.user_id as string ?? "",
+      role: r.role as string ?? "editor",
+      name: (r.name as string) ?? null,
+      avatar: (r.avatar as string) ?? null,
+      joined_at: (r.joined_at as string) ?? "",
+    }));
   },
 
   async leaveProject(projectId: string, userId: string) {
-    const { error } = await supabase
-      .from("project_members")
-      .delete()
-      .eq("project_id", projectId)
-      .eq("user_id", userId);
-    if (error) throw error;
+    await remove(ref(db, `${sharedMembers(projectId)}/${userId}`));
   },
 
-  // Owner changes a lobby member's role. The RPC enforces both the role
-  // whitelist and that the caller actually owns the project.
   async updateMemberRole(projectId: string, userId: string, role: "editor" | "viewer") {
-    const { error } = await supabase.rpc("update_member_role", {
-      p_project: projectId,
-      p_user: userId,
-      p_role: role,
-    });
-    if (error) throw error;
+    await update(ref(db, `${sharedMembers(projectId)}/${userId}`), { role });
   },
 };
+
+// ---- password hashing (Web Crypto API) ------------------------------------
+// Firebase RTDB can't use bcrypt, so we use PBKDF2 via Web Crypto.
+async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+    keyMaterial,
+    256,
+  );
+  const hash = new Uint8Array(bits);
+  const saltHex = Array.from(salt).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const hashHex = Array.from(hash).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${saltHex}:${hashHex}`;
+}
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [saltHex, hashHex] = stored.split(":");
+  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+    keyMaterial,
+    256,
+  );
+  const hash = Array.from(new Uint8Array(bits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return hash === hashHex;
+}

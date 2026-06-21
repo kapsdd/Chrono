@@ -13,26 +13,24 @@ import type {
 } from "@/lib/types";
 import { parseInput } from "@/lib/parseInput";
 import { repo } from "@/lib/repo";
-import {
-  clearCache,
-  clearQueue,
-  enqueue,
-  flush,
-  pendingWrites,
-  readCache,
-  writeCache,
-} from "@/lib/sync";
-import { supabase } from "@/lib/supabase";
+import { writeCache, readCache } from "@/lib/sync";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, type User } from "firebase/auth";
 import { DEFAULT_KANBAN_COLUMNS, normalizeKanbanColumns } from "@/lib/kanban";
-
-// Persistence: Supabase, keyed on the signed-in Discord profile (owner_id =
-// auth.uid()). Mutations update local state optimistically and write through to
-// Supabase in the background, so a profile's projects follow it across devices.
-// Mutators keep their Promise-returning signatures — components already await.
+import {
+  ref,
+  onValue,
+  off,
+  push,
+  set,
+  get,
+  child,
+  update,
+} from "firebase/database";
+import { db } from "@/lib/firebase";
 
 export type ViewFilter = string | null;
 
-/** The smart views in the sidebar (everything that isn't a single project). */
 export type ViewId =
   | "inbox"
   | "today"
@@ -47,19 +45,16 @@ export type ViewId =
   | "trash"
   | "settings";
 
-// Device-local UI navigation state. This is a per-device preference, not profile
-// data, so it stays in localStorage rather than syncing through Supabase.
 const NAV_KEY = "chrono.nav";
 
-// Accent colours cycled onto new projects (sidebar dots).
 const PROJECT_COLORS = [
-  "#a78bfa", // violet
-  "#f472b6", // pink
-  "#22d3ee", // cyan
-  "#facc15", // amber
-  "#34d399", // emerald
-  "#fb7185", // rose
-  "#818cf8", // indigo
+  "#a78bfa",
+  "#f472b6",
+  "#22d3ee",
+  "#facc15",
+  "#34d399",
+  "#fb7185",
+  "#818cf8",
 ];
 
 interface ChronoState {
@@ -77,8 +72,6 @@ interface ChronoState {
   createProject: (name: string) => Promise<Project | null>;
   renameProject: (id: string, name: string) => void;
   deleteProject: (id: string) => Promise<void>;
-  /** Leave a shared project: remove our membership locally + on the server.
-   *  Used when a non-owner clicks «удалить» on a project they only joined. */
   leaveProject: (id: string) => Promise<void>;
   addFromInput: (raw: string, parentId?: string | null) => Promise<void>;
   renameTask: (id: string, title: string) => void;
@@ -89,7 +82,6 @@ interface ChronoState {
   setPriority: (id: string, priority: Priority) => void;
   setTaskNote: (id: string, note: string) => void;
   setTaskOrder: (id: string, order: number) => void;
-  // project view + sharing
   setProjectView: (projectId: string, view: ProjectView) => void;
   setKanbanColumn: (projectId: string, priority: Priority, label: string, color: string) => void;
   resetKanbanColumns: (projectId: string) => void;
@@ -100,34 +92,16 @@ interface ChronoState {
   ensureOwner: (name: string, avatar?: string) => void;
   addFriend: (name: string, avatar?: string) => void;
   removeFriend: (id: string) => void;
-  // time tracking (#11) + recurrence / habits (#14)
   addTime: (id: string, seconds: number) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
-  // lobby — shared projects joined by code + password (#19)
   publishLobby: (projectId: string, password: string) => Promise<string | null>;
   unpublishLobby: (projectId: string) => Promise<void>;
-  joinLobby: (
-    code: string,
-    password: string,
-    name?: string,
-    avatar?: string,
-  ) => Promise<boolean>;
-  /** Owner-only: change a lobby member's role (editor / viewer). */
-  updateLobbyMemberRole: (
-    projectId: string,
-    userId: string,
-    role: "editor" | "viewer",
-  ) => Promise<boolean>;
-  /** Re-pull the signed-in profile's data from the server. */
+  joinLobby: (code: string, password: string, name?: string, avatar?: string) => Promise<boolean>;
+  updateLobbyMemberRole: (projectId: string, userId: string, role: "editor" | "viewer") => Promise<boolean>;
   refresh: () => Promise<void>;
-  /** Emergency escape hatch: wipe local cache + pending write queue, then
-   *  refetch from Supabase. Useful when a stale install left phantom rows
-   *  in localStorage that no longer match server state. */
   resetLocal: () => Promise<void>;
 }
 
-// Streak/roll helpers for recurring tasks. A check-in continues the streak if
-// the previous one happened within ~1.5 periods; otherwise it resets to 1.
 const PERIOD_MS: Record<Recurrence, number> = {
   daily: 86_400_000,
   weekly: 7 * 86_400_000,
@@ -137,7 +111,7 @@ const PERIOD_MS: Record<Recurrence, number> = {
 function nextStreak(prevIso: string | null | undefined, now: number, r: Recurrence): number {
   if (!prevIso) return 1;
   const gap = now - Date.parse(prevIso);
-  return gap >= 0 && gap <= PERIOD_MS[r] * 1.5 ? -1 : 1; // -1 = "continue" sentinel
+  return gap >= 0 && gap <= PERIOD_MS[r] * 1.5 ? -1 : 1;
 }
 
 function rollDue(due: string | null | undefined, now: number, r: Recurrence): string {
@@ -145,8 +119,6 @@ function rollDue(due: string | null | undefined, now: number, r: Recurrence): st
   return new Date(base + PERIOD_MS[r]).toISOString();
 }
 
-// crypto.randomUUID yields a valid uuid — matching the uuid primary keys in the
-// Supabase schema. The fallback keeps SSR / older runtimes from throwing.
 const uid = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -171,202 +143,84 @@ function loadNav(): { activeProjectId: ViewFilter; activeView: ViewId } {
 }
 
 export const useChronoStore = create<ChronoState>((set, get) => {
-  // Owner of the rows we write — auth.uid() of the signed-in Discord profile.
-  // Null when signed out; mutations become no-op writes until a profile loads.
   let ownerId: string | null = null;
   let subscribed = false;
+  let realtimeListeners: Array<{ path: string; unsub: () => void }> = [];
 
   const saveNav = () => {
     if (typeof window === "undefined") return;
     const { activeProjectId, activeView } = get();
     try {
       window.localStorage.setItem(NAV_KEY, JSON.stringify({ activeProjectId, activeView }));
-    } catch {
-      /* quota / private-mode */
-    }
+    } catch {}
   };
 
-  // Writes created before the profile finishes loading (ownerId still null).
-  // Rather than silently dropping them — which left rows only in memory and is
-  // the root cause of "project missing" on publish — we stash a closure here and
-  // replay it the moment ownerId resolves (see reload()), so every create still
-  // reaches the DB. Each closure stamps the now-known owner onto its payload.
-  let deferred: Array<(owner: string) => void> = [];
-  const flushDeferred = (owner: string) => {
-    if (!deferred.length) return;
-    const pending = deferred;
-    deferred = [];
-    pending.forEach((fn) => fn(owner));
-  };
-
-  // Snapshot the local data into the offline cache for instant next-launch load.
   const cache = () => {
     if (!ownerId) return;
     const { tasks, projects, friends } = get();
     writeCache(ownerId, { tasks, projects, friends });
   };
 
-  // Write-through helpers: update the offline queue (which writes through to
-  // Supabase, or retries later if offline), then refresh the local cache. When
-  // ownerId isn't known yet, defer the enqueue instead of dropping it.
   const saveProject = (p: Project) => {
-    if (ownerId) enqueue({ k: "upProject", project: p, owner: ownerId });
-    else deferred.push((owner) => enqueue({ k: "upProject", project: { ...p, ownerId: p.ownerId ?? owner }, owner }));
-    cache();
-  };
-  const saveTask = (t: Task) => {
-    if (ownerId) enqueue({ k: "upTask", task: t, owner: ownerId });
-    else deferred.push((owner) => enqueue({ k: "upTask", task: t, owner }));
-    cache();
-  };
-  const saveTasks = (tasks: Task[]) => {
-    if (!tasks.length) return;
-    if (ownerId) enqueue({ k: "upTasks", tasks, owner: ownerId });
-    else deferred.push((owner) => enqueue({ k: "upTasks", tasks, owner }));
+    if (!ownerId) return;
+    void repo.upsertProject(p, ownerId);
     cache();
   };
 
-  // Load the signed-in profile's data, or clear to empty when signed out.
+  const saveTask = (t: Task) => {
+    if (!ownerId) return;
+    void repo.upsertTask(t, ownerId);
+    cache();
+  };
+
+  const saveTasks = (tasks: Task[]) => {
+    if (!ownerId || !tasks.length) return;
+    void repo.upsertTasks(tasks, ownerId);
+    cache();
+  };
+
   const reload = async () => {
-    const { data } = await supabase.auth.getSession();
-    const id = data.session?.user?.id ?? null;
+    const user = auth.currentUser;
+    const id = user?.uid ?? null;
     ownerId = id;
     if (!id) {
       set({ tasks: [], projects: [], friends: [], ready: true });
       return;
     }
-    // The profile is now known — replay any writes made before it loaded so
-    // they reach the DB instead of living only in memory.
-    flushDeferred(id);
-    // Paint cached data immediately (offline-first), then reconcile with the
-    // server. If the fetch fails (offline), the cache stays on screen.
     const cached = readCache(id);
     if (cached) set({ ...cached, ready: true });
     try {
-      // Drain writes queued in a previous session BEFORE pulling the snapshot.
-      // Otherwise a delete that never reached the server (e.g. the app closed
-      // before its request finished) gets undone when the still-present row
-      // comes back in fetchAll. If writes remain queued afterwards (offline),
-      // keep the optimistic cache rather than reconciling against stale data.
-      await flush();
-      if (pendingWrites() > 0) {
-        set({ ready: true });
-        return;
-      }
-      const snap = await repo.fetchAll();
-      const serverTaskIds = new Set(snap.tasks.map((t) => t.id));
-      const localOnlyTasks = get().tasks.filter((t) => !serverTaskIds.has(t.id));
-      const mergedTasks = [...snap.tasks, ...localOnlyTasks];
-      console.debug(
-        `[chrono.reload] projects=${snap.projects.length} tasks=${snap.tasks.length} (server) + ${localOnlyTasks.length} (local-only) = ${mergedTasks.length} total`,
-      );
-      set({ ...snap, tasks: mergedTasks, ready: true });
-      writeCache(id, { ...snap, tasks: mergedTasks });
+      const snap = await repo.fetchAll(id);
+      set({ ...snap, ready: true });
+      writeCache(id, snap);
     } catch (e) {
       console.error("Failed to load profile data", e);
       set({ ready: true });
     }
   };
 
-  // ---- realtime sync (#19) ----
-  // Subscribe to row changes on tasks / projects / project_members; RLS scopes
-  // events to rows this user can see, so collaborators on a shared project get
-  // each other's edits live. We reconcile by reloading (debounced) but only
-  // once our own pending writes have drained, so a remote event never clobbers
-  // a local edit. project_members is included so role changes and new joins
-  // propagate to both sides without a manual refresh.
-  let channel: ReturnType<typeof supabase.channel> | null = null;
-  let reloadTimer: number | undefined;
-
-  // 250ms is short enough to feel "live" — much faster than the 900ms we used
-  // to use — but still long enough to batch a burst of events from a single
-  // sync (e.g. a member kicked off a flurry of task updates) into one fetch.
-  const RELOAD_DEBOUNCE_MS = 250;
-
-  const scheduleReload = () => {
-    if (typeof window === "undefined") return;
-    window.clearTimeout(reloadTimer);
-    reloadTimer = window.setTimeout(() => {
-      if (pendingWrites() > 0) {
-        // Наши собственные записи ещё не доехали до сервера — попробуем
-        // через секунду, чтобы не зацикливаться на быстром тике.
-        reloadTimer = window.setTimeout(scheduleReload, 1000);
-        return;
-      }
-      void reload();
-    }, RELOAD_DEBOUNCE_MS);
+  const stopRealtime = () => {
+    realtimeListeners.forEach(({ path, unsub }) => {
+      try { unsub(); } catch {}
+    });
+    realtimeListeners = [];
   };
 
-  // Tracks whether the realtime channel actually connected. If it didn't (a
-  // firewall, missing replication grant, etc.), the polling fallback below
-  // becomes the only sync path — so we make it more aggressive when realtime
-  // is known to be down.
-  let realtimeHealthy = false;
-  let realtimeRetries = 0;
-  const MAX_REALTIME_RETRIES = 3;
-
-  const subscribeRealtime = () => {
-    if (channel) {
-      void supabase.removeChannel(channel);
-      channel = null;
-    }
+  const setupRealtime = () => {
+    stopRealtime();
     if (!ownerId) return;
-    channel = supabase
-      .channel("chrono-sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, scheduleReload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleReload)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "project_members" },
-        scheduleReload,
-      )
-      .subscribe((status) => {
-        realtimeHealthy = status === "SUBSCRIBED";
-        if (status === "SUBSCRIBED") {
-          realtimeRetries = 0;
-          return;
-        }
-        console.warn("CHRONO realtime status:", status);
-        // Retry a few times on transient errors (TIMED_OUT / CHANNEL_ERROR);
-        // after MAX_REALTIME_RETRIES failures, stay on the polling fallback
-        // permanently for this session to avoid a tight reconnect loop.
-        if (status !== "CLOSED" && realtimeRetries < MAX_REALTIME_RETRIES) {
-          realtimeRetries++;
-          window.setTimeout(() => subscribeRealtime(), 3000 * realtimeRetries);
-        }
-      });
-  };
 
-  // ---- polling fallback ----
-  // Even with realtime enabled and the migrations applied, there are still ways
-  // for live sync to silently break: the WebSocket can be blocked by a corp
-  // proxy/firewall, the Supabase project can have replication paused, the user
-  // can be on a flaky LTE connection, etc. A periodic fetch is the safety net
-  // — if realtime works, this is no-op extra latency; if it doesn't, you still
-  // see your collaborator's edits, just a few seconds later.
-  let pollTimer: number | undefined;
-  const stopPoll = () => {
-    if (typeof window === "undefined") return;
-    if (pollTimer !== undefined) {
-      window.clearTimeout(pollTimer);
-      pollTimer = undefined;
-    }
-  };
-  const startPoll = () => {
-    if (typeof window === "undefined") return;
-    stopPoll();
-    const tick = () => {
-      if (!ownerId) return;
-      const queued = pendingWrites();
-      if (queued === 0) {
-        void reload();
-      } else {
-        console.debug(`[chrono.poll] skip: queued=${queued}`);
-      }
-      const interval = realtimeHealthy ? 8000 : 3000;
-      pollTimer = window.setTimeout(tick, interval);
+    const scheduleReload = () => {
+      void reload();
     };
-    pollTimer = window.setTimeout(tick, realtimeHealthy ? 3500 : 1500);
+
+    const userTasksRef = ref(db, `users/${ownerId}/tasks`);
+    const unsub1 = onValue(userTasksRef, scheduleReload);
+    realtimeListeners.push({ path: `users/${ownerId}/tasks`, unsub: () => off(userTasksRef, "value", unsub1) });
+
+    const userProjectsRef = ref(db, `users/${ownerId}/projects`);
+    const unsub2 = onValue(userProjectsRef, scheduleReload);
+    realtimeListeners.push({ path: `users/${ownerId}/projects`, unsub: () => off(userProjectsRef, "value", unsub2) });
   };
 
   const findOrCreateProjectByName = (name: string): string | null => {
@@ -425,29 +279,20 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     ready: false,
 
     bootstrap: async () => {
-      // Restore device-local nav, load profile data, and reload whenever the
-      // signed-in profile changes (login, logout, switching accounts).
       set({ ...loadNav() });
       if (!subscribed) {
         subscribed = true;
-        supabase.auth.onAuthStateChange((event) => {
-          // On sign-out drop the write queue: any ops still in flight belong
-          // to the user who just left. Replaying them under the next signed-in
-          // identity would either fail RLS (best case) or write to the wrong
-          // owner_id (worst case). The next sign-in starts fully clean.
-          if (event === "SIGNED_OUT") {
-            clearQueue();
+        onAuthStateChanged(auth, (user: User | null) => {
+          if (!user) {
             set({ tasks: [], projects: [], friends: [], ready: true });
+            stopRealtime();
+            return;
           }
-          void reload().then(() => {
-            subscribeRealtime();
-            startPoll();
-          });
+          void reload().then(() => setupRealtime());
         });
       }
       await reload();
-      subscribeRealtime();
-      startPoll();
+      setupRealtime();
     },
 
     setView: (view) => {
@@ -475,31 +320,24 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     deleteProject: async (id) => {
-      // If this is a shared project we only joined — not own — the server
-      // will silently reject the DELETE via RLS (owner-only) and the row will
-      // reappear on the next refresh. Route to leaveProject instead so the
-      // membership is removed cleanly and the project actually disappears.
       const project = get().projects.find((p) => p.id === id);
       if (project && ownerId && project.ownerId && project.ownerId !== ownerId) {
         await get().leaveProject(id);
         return;
       }
-      // Drop the project and its tasks locally; the DB cascades tasks via FK.
       set((s) => ({
         projects: s.projects.filter((p) => p.id !== id),
         tasks: s.tasks.filter((t) => t.projectId !== id),
         activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
         activeView: s.activeProjectId === id ? "plans" : s.activeView,
       }));
-      enqueue({ k: "delProject", id });
+      if (ownerId) await repo.deleteProject(id, ownerId);
       cache();
       saveNav();
     },
 
     leaveProject: async (id) => {
       if (!ownerId) return;
-      const project = get().projects.find((p) => p.id === id);
-      if (!project) return;
       set((s) => ({
         projects: s.projects.filter((p) => p.id !== id),
         tasks: s.tasks.filter((t) => t.projectId !== id),
@@ -512,8 +350,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         await repo.leaveProject(id, ownerId);
       } catch (e) {
         console.error("leaveProject", e);
-        // If the server rejected (we weren't actually a member), pull truth
-        // back so the sidebar isn't lying.
         await reload();
       }
     },
@@ -522,15 +358,12 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const parsed = parseInput(raw);
       if (!parsed.title) return;
 
-      // A /Project token overrides scope; otherwise inherit the active view
-      // (and, for subtasks, the parent's project).
       let projectId: ViewFilter = get().activeProjectId;
       if (parentId) {
         projectId = get().tasks.find((t) => t.id === parentId)?.projectId ?? projectId;
       }
       if (parsed.project) projectId = findOrCreateProjectByName(parsed.project);
 
-      // New tasks sort to the top (smallest order) of their list.
       const minOrder = get().tasks.reduce((m, t) => Math.min(m, t.order ?? 0), 0);
       const task: Task = {
         id: uid(),
@@ -559,8 +392,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const target = tasks.find((t) => t.id === id);
       if (!target) return;
 
-      // Recurring task / habit: completing is a "check-in" — bump the streak,
-      // roll the due date to the next period, and stay active rather than done.
       if (target.recurrence && !target.isCompleted) {
         const now = Date.now();
         const cont = nextStreak(target.lastCompletedAt, now, target.recurrence);
@@ -574,7 +405,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         return;
       }
 
-      // Completing a task completes its whole subtree; un-completing only the node.
       const next = !target.isCompleted;
 
       const descendants = new Set<string>([id]);
@@ -609,7 +439,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     deleteTask: async (id) => {
-      // Cascade: drop the node and its entire subtree (mirrors the FK rule).
       const tasks = get().tasks;
       const doomed = new Set<string>([id]);
       let grew = true;
@@ -622,8 +451,12 @@ export const useChronoStore = create<ChronoState>((set, get) => {
           }
         }
       }
+      const taskMap = new Map<string, string | null>();
+      for (const t of tasks) {
+        if (doomed.has(t.id)) taskMap.set(t.id, t.projectId);
+      }
       set({ tasks: tasks.filter((t) => !doomed.has(t.id)) });
-      enqueue({ k: "delTasks", ids: [...doomed] });
+      if (ownerId) await repo.deleteTasks([...doomed], ownerId, taskMap);
       cache();
     },
 
@@ -669,19 +502,13 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       if (!trimmed) return;
       patchProject(projectId, (p) => {
         const existing = p.collaborators ?? [];
-        if (existing.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
-          return p;
-        }
+        if (existing.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) return p;
         const collaborator: Collaborator = {
           id: uid(),
           name: trimmed,
           role,
           addedAt: nowIso(),
         };
-        // Don't flip `shared` here — that flag belongs to the lobby (set by
-        // publishLobby/unpublishLobby). Mixing the two used to mark any
-        // project with a local collaborator as "shared", which then survived
-        // unpublish and made personal projects look collaborative forever.
         return { ...p, collaborators: [...existing, collaborator] };
       });
     },
@@ -691,7 +518,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         let collaborators = (p.collaborators ?? []).map((c) =>
           c.id === collaboratorId ? { ...c, role } : c,
         );
-        // Only one owner at a time — demote any other owner to admin.
         if (role === "owner") {
           collaborators = collaborators.map((c) =>
             c.id !== collaboratorId && c.role === "owner"
@@ -704,13 +530,10 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     removeCollaborator: (projectId, collaboratorId) => {
-      patchProject(projectId, (p) => {
-        const collaborators = (p.collaborators ?? []).filter(
-          (c) => c.id !== collaboratorId,
-        );
-        // Same reasoning as addCollaborator: leave `shared` to the lobby RPCs.
-        return { ...p, collaborators };
-      });
+      patchProject(projectId, (p) => ({
+        ...p,
+        collaborators: (p.collaborators ?? []).filter((c) => c.id !== collaboratorId),
+      }));
     },
 
     transferOwnership: (projectId, collaboratorId) => {
@@ -729,12 +552,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const touched: Project[] = [];
       set((s) => ({
         projects: s.projects.map((p) => {
-          // Critical: ONLY stamp the signed-in user as "owner" collaborator on
-          // projects they actually own. Without this guard, opening the members
-          // modal as a joined member used to write the member's identity into
-          // the owner's project_row (via upsertProject), which RLS allowed
-          // because the member has UPDATE permission on shared projects. That's
-          // how a B-side modal-open could silently pollute A's project.
           if (ownerId && p.ownerId && p.ownerId !== ownerId) return p;
           const existing = p.collaborators ?? [];
           if (existing.some((c) => c.role === "owner")) return p;
@@ -756,61 +573,40 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     addFriend: (name, avatar) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      if (get().friends.some((f) => f.name.toLowerCase() === trimmed.toLowerCase())) {
-        return;
-      }
+      if (get().friends.some((f) => f.name.toLowerCase() === trimmed.toLowerCase())) return;
       const friend: Friend = { id: uid(), name: trimmed, avatar, addedAt: nowIso() };
       set((s) => ({ friends: [...s.friends, friend] }));
-      if (ownerId) enqueue({ k: "upFriend", friend, owner: ownerId });
-      else deferred.push((owner) => enqueue({ k: "upFriend", friend, owner }));
+      if (ownerId) void repo.upsertFriend(friend, ownerId);
       cache();
     },
 
     removeFriend: (id) => {
       set((s) => ({ friends: s.friends.filter((f) => f.id !== id) }));
-      enqueue({ k: "delFriend", id });
+      if (ownerId) void repo.deleteFriend(id, ownerId);
       cache();
     },
 
-    // ---- time tracking (#11) ----
     addTime: (id, seconds) => {
       if (seconds <= 0) return;
       patchTask(id, (t) => ({ ...t, timeSpent: (t.timeSpent ?? 0) + Math.round(seconds) }));
     },
 
-    // ---- recurrence / habits (#14) ----
     setRecurrence: (id, recurrence) => {
       patchTask(id, (t) => ({
         ...t,
         recurrence,
-        // Seed a due date so the first check-in has something to roll forward.
         due: recurrence && !t.due ? rollDue(null, Date.now(), recurrence) : t.due,
         streak: recurrence ? t.streak ?? 0 : 0,
       }));
     },
 
-    // ---- lobby (#19) ----
     publishLobby: async (projectId, password) => {
-      // Throws on failure so the UI can surface the real reason (missing RPC =
-      // migration not applied, or auth error = not signed in).
       const project = get().projects.find((p) => p.id === projectId);
       if (!project) throw new Error("Проект не найден");
       if (!ownerId) throw new Error("Сначала войдите в аккаунт");
-      // Capture into a const so the type stays `string` inside the closure below
-      // (a captured `let` widens back to `string | null`).
       const owner = ownerId;
-
-      // The publish_project RPC scopes its UPDATE to (id, owner_id = auth.uid()).
-      // If the project's row isn't in the DB yet it matches 0 rows and raises
-      // "not owner or project missing". That happens when the create write is
-      // still queued, or the project was created before the profile loaded (so
-      // saveProject skipped the enqueue). Drain the queue and write the row
-      // through synchronously before publishing, preserving the real owner.
-      await flush();
-      await repo.upsertProject({ ...project, ownerId: project.ownerId ?? owner }, owner);
-
       const code = makeJoinCode();
-      await repo.publishProject(projectId, code, password);
+      await repo.publishProject(projectId, code, password, project, owner);
       patchProject(projectId, (p) => ({
         ...p,
         ownerId: p.ownerId ?? owner,
@@ -824,10 +620,6 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     unpublishLobby: async (projectId) => {
       try {
         await repo.unpublishProject(projectId);
-        // Reset every lobby-related flag locally. The DB's `shared` column
-        // used to stay `true` after unpublish, which kept the project in the
-        // "Совместные" sidebar group forever; setup.sql's RPC now clears it
-        // too, and we mirror that here so the UI flips instantly.
         patchProject(projectId, (p) => ({
           ...p,
           published: false,
@@ -841,28 +633,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
 
     joinLobby: async (code, password, name, avatar) => {
       try {
-        // Drain any pending local writes BEFORE pulling the snapshot — a
-        // queued delete that hasn't reached the server yet would otherwise
-        // be "undone" by fetchAll returning the still-present row (this is
-        // why locally-deleted projects appeared to come back after joining).
-        await flush();
         const joinedId = await repo.joinProject(code.trim(), password, name, avatar);
-        // Pull the snapshot directly instead of going through reload(): reload
-        // short-circuits if any queued write is still pending, which would
-        // leave the just-joined shared project invisible on B's side.
-        const snap = await repo.fetchAll();
-        // Also jump to the joined project so the user can see they're in it,
-        // and switch off the "plans/all" view that often hides shared tasks.
+        await repo.addMember(joinedId, auth.currentUser!.uid, name, avatar);
+        await reload();
         set({
-          ...snap,
           activeProjectId: joinedId,
           activeView: "project",
           ready: true,
         });
         saveNav();
-        if (ownerId) writeCache(ownerId, snap);
-        subscribeRealtime();
-        startPoll();
+        setupRealtime();
         return true;
       } catch (e) {
         console.error("joinLobby", e);
@@ -885,18 +665,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     resetLocal: async () => {
-      // Drop everything that lives only in the browser — pending writes that
-      // never reached the server, and the offline snapshot — then re-pull
-      // truth from Supabase. The signed-in session itself is untouched.
-      clearQueue();
-      if (ownerId) clearCache(ownerId);
+      if (ownerId) {
+        const { clearCache } = await import("@/lib/sync");
+        clearCache(ownerId);
+      }
       set({ tasks: [], projects: [], friends: [], ready: false });
       await reload();
     },
   };
 });
 
-// Short, unambiguous lobby code (no easily-confused chars), e.g. "K7P-29Q".
 function makeJoinCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const pick = (n: number) =>

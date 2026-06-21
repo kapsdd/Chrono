@@ -3,3 +3,17 @@
 // exists after a build and is gitignored — this committed copy lets a standalone
 // `tsc --noEmit` resolve image modules (*.png, *.ico, ...) too.
 /// <reference types="next/image-types/global" />
+
+declare global {
+  interface Window {
+    chrono?: {
+      isDesktop?: boolean;
+      minimize?: () => void;
+      toggleMaximize?: () => void;
+      close?: () => void;
+      discordAuthCode?: (authUrl: string) => Promise<string | null>;
+    };
+  }
+}
+
+export {};
