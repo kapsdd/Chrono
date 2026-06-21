@@ -13,7 +13,15 @@ import type {
 } from "@/lib/types";
 import { parseInput } from "@/lib/parseInput";
 import { repo } from "@/lib/repo";
-import { enqueue, flush, pendingWrites, readCache, writeCache } from "@/lib/sync";
+import {
+  clearCache,
+  clearQueue,
+  enqueue,
+  flush,
+  pendingWrites,
+  readCache,
+  writeCache,
+} from "@/lib/sync";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_KANBAN_COLUMNS, normalizeKanbanColumns } from "@/lib/kanban";
 
@@ -112,6 +120,10 @@ interface ChronoState {
   ) => Promise<boolean>;
   /** Re-pull the signed-in profile's data from the server. */
   refresh: () => Promise<void>;
+  /** Emergency escape hatch: wipe local cache + pending write queue, then
+   *  refetch from Supabase. Useful when a stale install left phantom rows
+   *  in localStorage that no longer match server state. */
+  resetLocal: () => Promise<void>;
 }
 
 // Streak/roll helpers for recurring tasks. A check-in continues the streak if
@@ -277,6 +289,12 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     }, RELOAD_DEBOUNCE_MS);
   };
 
+  // Tracks whether the realtime channel actually connected. If it didn't (a
+  // firewall, missing replication grant, etc.), the polling fallback below
+  // becomes the only sync path — so we make it more aggressive when realtime
+  // is known to be down.
+  let realtimeHealthy = false;
+
   const subscribeRealtime = () => {
     if (channel) {
       void supabase.removeChannel(channel);
@@ -292,7 +310,47 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         { event: "*", schema: "public", table: "project_members" },
         scheduleReload,
       )
-      .subscribe();
+      .subscribe((status) => {
+        // SUBSCRIBED means the channel is live; anything else (CHANNEL_ERROR,
+        // TIMED_OUT, CLOSED) means we'll only sync via the polling fallback.
+        realtimeHealthy = status === "SUBSCRIBED";
+        if (status !== "SUBSCRIBED") {
+          console.warn("CHRONO realtime status:", status);
+        }
+      });
+  };
+
+  // ---- polling fallback ----
+  // Even with realtime enabled and the migrations applied, there are still ways
+  // for live sync to silently break: the WebSocket can be blocked by a corp
+  // proxy/firewall, the Supabase project can have replication paused, the user
+  // can be on a flaky LTE connection, etc. A periodic fetch is the safety net
+  // — if realtime works, this is no-op extra latency; if it doesn't, you still
+  // see your collaborator's edits, just a few seconds later.
+  let pollTimer: number | undefined;
+  const stopPoll = () => {
+    if (typeof window === "undefined") return;
+    if (pollTimer !== undefined) {
+      window.clearTimeout(pollTimer);
+      pollTimer = undefined;
+    }
+  };
+  const startPoll = () => {
+    if (typeof window === "undefined") return;
+    stopPoll();
+    const tick = () => {
+      if (!ownerId) return;
+      // Only refetch when the user has at least one shared project — pure
+      // personal use doesn't need polling. We also skip when writes are
+      // pending so we never undo an optimistic local edit.
+      const hasShared = get().projects.some((p) => p.shared);
+      if (hasShared && pendingWrites() === 0) {
+        void reload();
+      }
+      const interval = realtimeHealthy ? 8000 : 3500;
+      pollTimer = window.setTimeout(tick, interval);
+    };
+    pollTimer = window.setTimeout(tick, 3500);
   };
 
   const findOrCreateProjectByName = (name: string): string | null => {
@@ -356,7 +414,15 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       set({ ...loadNav() });
       if (!subscribed) {
         subscribed = true;
-        supabase.auth.onAuthStateChange(() => {
+        supabase.auth.onAuthStateChange((event) => {
+          // On sign-out drop the write queue: any ops still in flight belong
+          // to the user who just left. Replaying them under the next signed-in
+          // identity would either fail RLS (best case) or write to the wrong
+          // owner_id (worst case). The next sign-in starts fully clean.
+          if (event === "SIGNED_OUT") {
+            clearQueue();
+            set({ tasks: [], projects: [], friends: [], ready: true });
+          }
           void reload().then(subscribeRealtime);
         });
       }
@@ -592,8 +658,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
           role,
           addedAt: nowIso(),
         };
-        const collaborators = [...existing, collaborator];
-        return { ...p, collaborators, shared: collaborators.length > 1 };
+        // Don't flip `shared` here — that flag belongs to the lobby (set by
+        // publishLobby/unpublishLobby). Mixing the two used to mark any
+        // project with a local collaborator as "shared", which then survived
+        // unpublish and made personal projects look collaborative forever.
+        return { ...p, collaborators: [...existing, collaborator] };
       });
     },
 
@@ -619,7 +688,8 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         const collaborators = (p.collaborators ?? []).filter(
           (c) => c.id !== collaboratorId,
         );
-        return { ...p, collaborators, shared: collaborators.length > 1 };
+        // Same reasoning as addCollaborator: leave `shared` to the lobby RPCs.
+        return { ...p, collaborators };
       });
     },
 
@@ -639,6 +709,13 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       const touched: Project[] = [];
       set((s) => ({
         projects: s.projects.map((p) => {
+          // Critical: ONLY stamp the signed-in user as "owner" collaborator on
+          // projects they actually own. Without this guard, opening the members
+          // modal as a joined member used to write the member's identity into
+          // the owner's project_row (via upsertProject), which RLS allowed
+          // because the member has UPDATE permission on shared projects. That's
+          // how a B-side modal-open could silently pollute A's project.
+          if (ownerId && p.ownerId && p.ownerId !== ownerId) return p;
           const existing = p.collaborators ?? [];
           if (existing.some((c) => c.role === "owner")) return p;
           const owner: Collaborator = {
@@ -727,7 +804,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     unpublishLobby: async (projectId) => {
       try {
         await repo.unpublishProject(projectId);
-        patchProject(projectId, (p) => ({ ...p, published: false, joinCode: null }));
+        // Reset every lobby-related flag locally. The DB's `shared` column
+        // used to stay `true` after unpublish, which kept the project in the
+        // "Совместные" sidebar group forever; setup.sql's RPC now clears it
+        // too, and we mirror that here so the UI flips instantly.
+        patchProject(projectId, (p) => ({
+          ...p,
+          published: false,
+          joinCode: null,
+          shared: false,
+        }));
       } catch (e) {
         console.error("unpublishLobby", e);
       }
@@ -740,12 +826,20 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         // be "undone" by fetchAll returning the still-present row (this is
         // why locally-deleted projects appeared to come back after joining).
         await flush();
-        await repo.joinProject(code.trim(), password, name, avatar);
+        const joinedId = await repo.joinProject(code.trim(), password, name, avatar);
         // Pull the snapshot directly instead of going through reload(): reload
         // short-circuits if any queued write is still pending, which would
         // leave the just-joined shared project invisible on B's side.
         const snap = await repo.fetchAll();
-        set({ ...snap, ready: true });
+        // Also jump to the joined project so the user can see they're in it,
+        // and switch off the "plans/all" view that often hides shared tasks.
+        set({
+          ...snap,
+          activeProjectId: joinedId,
+          activeView: "project",
+          ready: true,
+        });
+        saveNav();
         if (ownerId) writeCache(ownerId, snap);
         subscribeRealtime();
         return true;
@@ -766,6 +860,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     refresh: async () => {
+      await reload();
+    },
+
+    resetLocal: async () => {
+      // Drop everything that lives only in the browser — pending writes that
+      // never reached the server, and the offline snapshot — then re-pull
+      // truth from Supabase. The signed-in session itself is untouched.
+      clearQueue();
+      if (ownerId) clearCache(ownerId);
+      set({ tasks: [], projects: [], friends: [], ready: false });
       await reload();
     },
   };

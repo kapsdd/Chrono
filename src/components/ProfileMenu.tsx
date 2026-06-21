@@ -10,8 +10,10 @@ export function ProfileMenu({ onOpenFriends }: { onOpenFriends: () => void }) {
   const session = useSession((s) => s.session);
   const logout = useSession((s) => s.logout);
   const setView = useChronoStore((s) => s.setView);
+  const resetLocal = useChronoStore((s) => s.resetLocal);
   const friendsCount = useChronoStore((s) => s.friends.length);
   const [open, setOpen] = useState(false);
+  const [resyncing, setResyncing] = useState(false);
 
   if (!session) return null;
   const letter = session.username[0]?.toUpperCase() ?? "?";
@@ -79,6 +81,19 @@ export function ProfileMenu({ onOpenFriends }: { onOpenFriends: () => void }) {
 
               <div className="my-1.5 h-px bg-white/[0.06]" />
 
+              <MenuItem
+                icon="shuffle"
+                label={resyncing ? "Синхронизация…" : "Пересинхронизировать"}
+                onClick={async () => {
+                  setResyncing(true);
+                  try {
+                    await resetLocal();
+                  } finally {
+                    setResyncing(false);
+                    setOpen(false);
+                  }
+                }}
+              />
               <MenuItem icon="shuffle" label="Выйти" danger onClick={logout} />
             </motion.div>
           </>

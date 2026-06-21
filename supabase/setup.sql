@@ -274,6 +274,8 @@ end;
 $publish$;
 
 -- Владелец закрывает доступ: очищает код, новые входы невозможны.
+-- ВАЖНО: сбрасываем и shared=false, иначе проект навсегда останется в
+-- секции «Совместные проекты», даже после закрытия лобби — был такой баг.
 create or replace function public.unpublish_project(p_project uuid)
 returns void
 language plpgsql
@@ -282,10 +284,19 @@ set search_path = public
 as $unpublish$
 begin
   update public.projects
-     set join_code = null, join_password = null
+     set join_code = null,
+         join_password = null,
+         shared = false
    where id = p_project and owner_id = auth.uid();
 end;
 $unpublish$;
+
+-- Одноразовая чистка липкого флага: если проект НЕ опубликован (нет
+-- join_code) и при этом помечен shared=true — это артефакт старого кода,
+-- который ставил shared при добавлении локального коллаборатора. Снимаем.
+update public.projects
+   set shared = false
+ where join_code is null and shared = true;
 
 -- Любой вошедший пользователь входит по коду + паролю. Проверяет bcrypt-хеш,
 -- затем добавляет строку участника (definer обходит members-insert RLS).

@@ -136,6 +136,26 @@ export function enqueue(op: Op) {
   void flush();
 }
 
+/** Drop the entire pending write queue. Used by the store's resetLocal()
+ *  escape hatch when the user wants to force a fresh server pull (e.g. an
+ *  older device build left stale ops queued under a previous auth.uid that
+ *  RLS now rejects, blocking flush forever). */
+export function clearQueue() {
+  queue = [];
+  persistQueue();
+}
+
+/** Wipe the snapshot cache for a specific signed-in user. Pair with
+ *  clearQueue() before calling repo.fetchAll() to start fully clean. */
+export function clearCache(owner: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(cacheKey(owner));
+  } catch {
+    /* ignore */
+  }
+}
+
 // Retry the queue whenever the browser regains connectivity.
 function wire() {
   if (wired || typeof window === "undefined") return;

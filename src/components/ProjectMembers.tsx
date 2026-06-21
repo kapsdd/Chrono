@@ -151,8 +151,12 @@ export function ProjectMembers({
     onClose();
   };
 
-  // Seed the signed-in user as owner the first time the panel opens.
+  // Seed the signed-in user as owner only on projects they actually own —
+  // for joined (member) projects this is the wrong identity to stamp. The
+  // store's ensureOwner now guards against cross-owner writes too, but
+  // we also gate the call here so we don't even attempt it.
   useEffect(() => {
+    if (!isOwner) return;
     ensureOwner(session?.username ?? "Вы", session?.avatar);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

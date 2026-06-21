@@ -36,8 +36,16 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
   const archivedCount = tasks.filter((t) => t.isCompleted).length;
   const habitCount = tasks.filter((t) => t.recurrence && !t.isCompleted).length;
 
-  const sharedProjects = projects.filter((p) => p.shared);
-  const myProjects = projects.filter((p) => !p.shared);
+  // "Совместные" = either you've opened it to the lobby (`published`) or it
+  // isn't your project at all (you joined someone else's via code). We don't
+  // trust the DB's `shared` flag here because it used to get set as a side
+  // effect of adding a local collaborator and then never cleared on unpublish,
+  // making personal projects look collaborative forever.
+  const myId = session?.id;
+  const isSharedProject = (p: (typeof projects)[number]) =>
+    Boolean(p.published) || Boolean(p.ownerId && myId && p.ownerId !== myId);
+  const sharedProjects = projects.filter(isSharedProject);
+  const myProjects = projects.filter((p) => !isSharedProject(p));
 
   const addProject = () => {
     if (!newName.trim()) return;
