@@ -281,7 +281,9 @@ export const repo = {
   },
 
   async publishProject(projectId: string, code: string, password: string, project: Project, ownerId: string) {
+    console.log("[repo] publishProject start", projectId, code);
     const bcryptHash = await hashPassword(password);
+    console.log("[repo] password hashed");
     const updates: Record<string, unknown> = {};
     updates[`${joinCodes()}/${code}`] = {
       project_id: projectId,

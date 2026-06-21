@@ -7,6 +7,7 @@ import { getDatabase } from "firebase/database";
 const firebaseConfig = {
   apiKey: "AIzaSyDGBhNJtYegqnDya7EEyD-V8wpbTz-VuAc",
   authDomain: "chrono-a1f8d.firebaseapp.com",
+  databaseURL: "https://chrono-a1f8d-default-rtdb.firebaseio.com",
   projectId: "chrono-a1f8d",
   storageBucket: "chrono-a1f8d.firebasestorage.app",
   messagingSenderId: "514930791311",
