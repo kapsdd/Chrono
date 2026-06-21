@@ -183,7 +183,7 @@ export const repo = {
       ]);
       if (metaSnap.exists()) {
         const meta = metaSnap.val() as Record<string, unknown>;
-        sharedProjects.push(dbToProject({ ...meta, id: pid }));
+        sharedProjects.push(dbToProject({ ...meta, id: pid, shared: true }));
       }
       sharedTasksAll.push(...tasksSnap);
     }
@@ -294,6 +294,7 @@ export const repo = {
       name: project.name,
       color: project.color ?? null,
       owner_id: ownerId,
+      shared: true,
       view: project.view ?? "list",
       kanban_columns: normalizeKanbanColumns(project.kanbanColumns),
       created_at: project.createdAt,
