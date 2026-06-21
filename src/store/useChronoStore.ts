@@ -254,8 +254,14 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         return;
       }
       const snap = await repo.fetchAll();
-      set({ ...snap, ready: true });
-      writeCache(id, snap);
+      const serverTaskIds = new Set(snap.tasks.map((t) => t.id));
+      const localOnlyTasks = get().tasks.filter((t) => !serverTaskIds.has(t.id));
+      const mergedTasks = [...snap.tasks, ...localOnlyTasks];
+      console.debug(
+        `[chrono.reload] projects=${snap.projects.length} tasks=${snap.tasks.length} (server) + ${localOnlyTasks.length} (local-only) = ${mergedTasks.length} total`,
+      );
+      set({ ...snap, tasks: mergedTasks, ready: true });
+      writeCache(id, { ...snap, tasks: mergedTasks });
     } catch (e) {
       console.error("Failed to load profile data", e);
       set({ ready: true });
@@ -282,7 +288,9 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     window.clearTimeout(reloadTimer);
     reloadTimer = window.setTimeout(() => {
       if (pendingWrites() > 0) {
-        scheduleReload(); // our writes haven't landed yet — wait
+        // Наши собственные записи ещё не доехали до сервера — попробуем
+        // через секунду, чтобы не зацикливаться на быстром тике.
+        reloadTimer = window.setTimeout(scheduleReload, 1000);
         return;
       }
       void reload();
@@ -294,6 +302,8 @@ export const useChronoStore = create<ChronoState>((set, get) => {
   // becomes the only sync path — so we make it more aggressive when realtime
   // is known to be down.
   let realtimeHealthy = false;
+  let realtimeRetries = 0;
+  const MAX_REALTIME_RETRIES = 3;
 
   const subscribeRealtime = () => {
     if (channel) {
@@ -311,11 +321,18 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         scheduleReload,
       )
       .subscribe((status) => {
-        // SUBSCRIBED means the channel is live; anything else (CHANNEL_ERROR,
-        // TIMED_OUT, CLOSED) means we'll only sync via the polling fallback.
         realtimeHealthy = status === "SUBSCRIBED";
-        if (status !== "SUBSCRIBED") {
-          console.warn("CHRONO realtime status:", status);
+        if (status === "SUBSCRIBED") {
+          realtimeRetries = 0;
+          return;
+        }
+        console.warn("CHRONO realtime status:", status);
+        // Retry a few times on transient errors (TIMED_OUT / CHANNEL_ERROR);
+        // after MAX_REALTIME_RETRIES failures, stay on the polling fallback
+        // permanently for this session to avoid a tight reconnect loop.
+        if (status !== "CLOSED" && realtimeRetries < MAX_REALTIME_RETRIES) {
+          realtimeRetries++;
+          window.setTimeout(() => subscribeRealtime(), 3000 * realtimeRetries);
         }
       });
   };
@@ -340,17 +357,21 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     stopPoll();
     const tick = () => {
       if (!ownerId) return;
-      // Only refetch when the user has at least one shared project — pure
-      // personal use doesn't need polling. We also skip when writes are
-      // pending so we never undo an optimistic local edit.
       const hasShared = get().projects.some((p) => p.shared);
-      if (hasShared && pendingWrites() === 0) {
+      const queued = pendingWrites();
+      if (hasShared && queued === 0) {
         void reload();
+      } else {
+        console.debug(
+          "[chrono.poll] skip:",
+          hasShared ? "has shared" : "no shared",
+          queued > 0 ? `queued=${queued}` : "",
+        );
       }
-      const interval = realtimeHealthy ? 8000 : 3500;
+      const interval = realtimeHealthy ? 8000 : 2000;
       pollTimer = window.setTimeout(tick, interval);
     };
-    pollTimer = window.setTimeout(tick, 3500);
+    pollTimer = window.setTimeout(tick, realtimeHealthy ? 3500 : 1500);
   };
 
   const findOrCreateProjectByName = (name: string): string | null => {
@@ -423,11 +444,15 @@ export const useChronoStore = create<ChronoState>((set, get) => {
             clearQueue();
             set({ tasks: [], projects: [], friends: [], ready: true });
           }
-          void reload().then(subscribeRealtime);
+          void reload().then(() => {
+            subscribeRealtime();
+            startPoll();
+          });
         });
       }
       await reload();
       subscribeRealtime();
+      startPoll();
     },
 
     setView: (view) => {
@@ -842,6 +867,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         saveNav();
         if (ownerId) writeCache(ownerId, snap);
         subscribeRealtime();
+        startPoll();
         return true;
       } catch (e) {
         console.error("joinLobby", e);

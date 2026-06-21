@@ -112,9 +112,9 @@ export function flush(): Promise<void> {
       while (queue.length) {
         try {
           await runOp(queue[0]);
-        } catch {
-          // Stop on the first failure (likely offline); keep the rest queued
-          // and try again on the next reconnect / enqueue.
+        } catch (e) {
+          console.error("[chrono.sync] op failed, queue stalled:", queue[0]?.k, e);
+          console.error("[chrono.sync] full op:", JSON.stringify(queue[0]));
           break;
         }
         queue.shift();
