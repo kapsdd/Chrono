@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CAESAR_QUOTES, CAESAR_TITLE } from "@/lib/quotes";
 
@@ -18,9 +18,11 @@ interface Mote {
 export function Intro({ onDone }: { onDone: () => void }) {
   const [quote, setQuote] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
 
   const finish = () => {
-    if (leaving) return;
+    if (leavingRef.current) return;
+    leavingRef.current = true;
     setLeaving(true);
     window.setTimeout(onDone, 900);
   };

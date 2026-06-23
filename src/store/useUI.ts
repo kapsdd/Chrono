@@ -15,7 +15,17 @@ export type Theme =
   | "rose"
   | "gold"
   | "graphite"
-  | "light";
+  | "light"
+  | "aurora"
+  | "lavender"
+  | "neon"
+  | "forest"
+  | "cherry"
+  | "arctic"
+  | "volcano"
+  | "sakura"
+  | "cyber"
+  | "autumn";
 
 export interface ThemeMeta {
   id: Theme;
@@ -42,6 +52,16 @@ export const THEMES: ThemeMeta[] = [
   { id: "gold", label: "Золото", swatch: "linear-gradient(135deg,#f59e0b,#eab308)" },
   { id: "graphite", label: "Графит", swatch: "linear-gradient(135deg,#64748b,#94a3b8)" },
   { id: "light", label: "Светлая", swatch: "linear-gradient(135deg,#f4f1fb,#e6e0f5)", light: true },
+  { id: "aurora", label: "Аврора", swatch: "linear-gradient(135deg,#06b6d4,#8b5cf6,#10b981)" },
+  { id: "lavender", label: "Лаванда", swatch: "linear-gradient(135deg,#a78baa,#e9d5ff,#f0abfc)" },
+  { id: "neon", label: "Неон", swatch: "linear-gradient(135deg,#f43f5e,#06b6d4)" },
+  { id: "forest", label: "Лес", swatch: "linear-gradient(135deg,#064e3b,#166534,#65a30d)" },
+  { id: "cherry", label: "Вишня", swatch: "linear-gradient(135deg,#881337,#e11d48,#fb7185)" },
+  { id: "arctic", label: "Арктика", swatch: "linear-gradient(135deg,#e0f2fe,#bae6fd,#7dd3fc)" },
+  { id: "volcano", label: "Вулкан", swatch: "linear-gradient(135deg,#1c1917,#9a3412,#f97316)" },
+  { id: "sakura", label: "Сакура", swatch: "linear-gradient(135deg,#fce7f3,#fbcfe8,#f9a8d4)" },
+  { id: "cyber", label: "Кибер", swatch: "linear-gradient(135deg,#3b82f6,#d946ef)" },
+  { id: "autumn", label: "Осень", swatch: "linear-gradient(135deg,#78350f,#c2410c,#eab308)" },
 ];
 
 export const ACHIEVEMENT_THEMES: AchievementTheme[] = [

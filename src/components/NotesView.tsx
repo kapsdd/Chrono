@@ -258,7 +258,7 @@ function NoteEditor({
   // Push initial content once per note id, then let contentEditable own it.
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== note.content) {
-      editorRef.current.innerHTML = note.content || "";
+      editorRef.current.innerHTML = sanitizeHtml(note.content || "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);

@@ -176,11 +176,17 @@ export const repo = {
     const sharedProjects: Project[] = [];
     const sharedTasksAll: Task[] = [];
 
-    for (const pid of sharedProjectIds) {
-      const [metaSnap, tasksSnap] = await Promise.all([
-        get(ref(db, sharedMeta(pid))),
-        getSnapshot(`${sharedTasks(pid)}`, dbToTask),
-      ]);
+    const sharedResults = await Promise.all(
+      sharedProjectIds.map(async (pid) => {
+        const [metaSnap, tasksSnap] = await Promise.all([
+          get(ref(db, sharedMeta(pid))),
+          getSnapshot(`${sharedTasks(pid)}`, dbToTask),
+        ]);
+        return { pid, metaSnap, tasksSnap };
+      }),
+    );
+
+    for (const { pid, metaSnap, tasksSnap } of sharedResults) {
       if (metaSnap.exists()) {
         const meta = metaSnap.val() as Record<string, unknown>;
         sharedProjects.push(dbToProject({ ...meta, id: pid, shared: true }));
@@ -203,6 +209,7 @@ export const repo = {
   },
 
   async upsertProject(p: Project, ownerId: string) {
+    if (!p.name?.trim()) return;
     await set(
       ref(db, `${userProjects(ownerId)}/${p.id}`),
       projectToDB(p, ownerId),
@@ -221,22 +228,25 @@ export const repo = {
   },
 
   async deleteProject(id: string, ownerId: string) {
-    await remove(ref(db, `${userProjects(ownerId)}/${id}`));
-    await remove(ref(db, sharedTasks(id)));
-    await remove(ref(db, sharedMembers(id)));
-    await remove(ref(db, sharedMeta(id)));
+    const updates: Record<string, null> = {};
+    updates[`${userProjects(ownerId)}/${id}`] = null;
+    updates[`${sharedTasks(id)}`] = null;
+    updates[`${sharedMembers(id)}`] = null;
+    updates[`${sharedMeta(id)}`] = null;
     const codeSnap = await get(ref(db, joinCodes()));
     if (codeSnap.exists()) {
       const codes = codeSnap.val() as Record<string, { project_id: string }>;
       for (const [code, data] of Object.entries(codes)) {
         if (data.project_id === id) {
-          await remove(ref(db, `${joinCodes()}/${code}`));
+          updates[`${joinCodes()}/${code}`] = null;
         }
       }
     }
+    await update(ref(db), updates);
   },
 
   async upsertTask(t: Task, ownerId: string) {
+    if (!t.title?.trim()) return;
     const row = taskToDB(t, ownerId);
     const updates: Record<string, unknown> = {};
     updates[`${userTasks(ownerId)}/${t.id}`] = row;
@@ -281,15 +291,12 @@ export const repo = {
   },
 
   async publishProject(projectId: string, code: string, password: string, project: Project, ownerId: string) {
-    console.log("[repo] publishProject start", projectId, code);
     const hash = await hashPassword(password);
-    console.log("[repo] password hashed");
     await set(ref(db, `${joinCodes()}/${code}`), {
       project_id: projectId,
       password_hash: hash,
       owner_id: ownerId,
     });
-    console.log("[repo] joinCode written");
     await set(ref(db, sharedMeta(projectId)), {
       name: project.name,
       color: project.color ?? null,
@@ -299,14 +306,12 @@ export const repo = {
       kanban_columns: normalizeKanbanColumns(project.kanbanColumns),
       created_at: project.createdAt,
     });
-    console.log("[repo] meta written");
     await set(ref(db, `${sharedMembers(projectId)}/${ownerId}`), {
       role: "owner",
       name: project.collaborators?.find((c) => c.role === "owner")?.name ?? "Владелец",
       avatar: project.collaborators?.find((c) => c.role === "owner")?.avatar ?? null,
       joined_at: new Date().toISOString(),
     });
-    console.log("[repo] publishProject done");
   },
 
   async unpublishProject(projectId: string) {

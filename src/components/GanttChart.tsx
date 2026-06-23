@@ -35,8 +35,8 @@ export function GanttChart({ tasks }: { tasks: Task[] }) {
       const now = Date.now();
       return { min: now - DAY, max: now + 7 * DAY };
     }
-    const min = Math.min(...rows.map((r) => r.start)) - DAY;
-    const max = Math.max(...rows.map((r) => r.end)) + DAY;
+    const min = rows.reduce((m, r) => Math.min(m, r.start), Infinity) - DAY;
+    const max = rows.reduce((m, r) => Math.max(m, r.end), -Infinity) + DAY;
     return { min, max };
   }, [rows]);
 

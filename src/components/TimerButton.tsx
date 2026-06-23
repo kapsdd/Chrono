@@ -107,8 +107,9 @@ function notifyEnd() {
 
 export function TimerButton() {
   const [open, setOpen] = useState(false);
-  const [timer, setTimer] = useState<TimerState>(() => loadTimer());
-  const [customMinutes, setCustomMinutes] = useState(() => String(Math.round(loadTimer().duration / 60)));
+  const initialTimer = useMemo(() => loadTimer(), []);
+  const [timer, setTimer] = useState<TimerState>(initialTimer);
+  const [customMinutes, setCustomMinutes] = useState(() => String(Math.round(initialTimer.duration / 60)));
   const endedRef = useRef(false);
 
   const pct = useMemo(

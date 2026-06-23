@@ -82,6 +82,7 @@ interface ChronoState {
   setPriority: (id: string, priority: Priority) => void;
   setTaskNote: (id: string, note: string) => void;
   setTaskOrder: (id: string, order: number) => void;
+  moveTask: (id: string, priority: Priority, order: number) => void;
   setProjectView: (projectId: string, view: ProjectView) => void;
   setKanbanColumn: (projectId: string, priority: Priority, label: string, color: string) => void;
   resetKanbanColumns: (projectId: string) => void;
@@ -147,6 +148,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
   let subscribed = false;
   let realtimeListeners: Array<{ path: string; unsub: () => void }> = [];
   let knownProjectIds = new Set<string>();
+  let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 
   const saveNav = () => {
     if (typeof window === "undefined") return;
@@ -216,7 +218,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     if (!ownerId) return;
 
     const scheduleReload = () => {
-      void reload();
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        void reload();
+      }, 150);
     };
 
     const userTasksRef = ref(db, `users/${ownerId}/tasks`);
@@ -304,9 +310,10 @@ export const useChronoStore = create<ChronoState>((set, get) => {
           }
           void reload().then(() => setupRealtime());
         });
+      } else {
+        await reload();
+        setupRealtime();
       }
-      await reload();
-      setupRealtime();
     },
 
     setView: (view) => {
@@ -345,7 +352,13 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
         activeView: s.activeProjectId === id ? "plans" : s.activeView,
       }));
-      if (ownerId) await repo.deleteProject(id, ownerId);
+      try {
+        if (ownerId) await repo.deleteProject(id, ownerId);
+      } catch (e) {
+        console.error("deleteProject failed", e);
+        await reload();
+        return;
+      }
       cache();
       saveNav();
     },
@@ -402,50 +415,53 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     toggleComplete: async (id) => {
-      const tasks = get().tasks;
-      const target = tasks.find((t) => t.id === id);
-      if (!target) return;
+      let changed: Task[] = [];
 
-      if (target.recurrence && !target.isCompleted) {
-        const now = Date.now();
-        const cont = nextStreak(target.lastCompletedAt, now, target.recurrence);
-        const streak = cont === -1 ? (target.streak ?? 0) + 1 : 1;
-        patchTask(id, (t) => ({
-          ...t,
-          streak,
-          lastCompletedAt: new Date(now).toISOString(),
-          due: rollDue(t.due, now, t.recurrence as Recurrence),
-        }));
-        return;
-      }
+      set((s) => {
+        const target = s.tasks.find((t) => t.id === id);
+        if (!target) return s;
 
-      const next = !target.isCompleted;
+        if (target.recurrence && !target.isCompleted) {
+          const now = Date.now();
+          const cont = nextStreak(target.lastCompletedAt, now, target.recurrence);
+          const streak = cont === -1 ? (target.streak ?? 0) + 1 : 1;
+          const nt = {
+            ...target,
+            streak,
+            lastCompletedAt: new Date(now).toISOString(),
+            due: rollDue(target.due, now, target.recurrence as Recurrence),
+          };
+          changed = [nt];
+          return { tasks: s.tasks.map((t) => (t.id === id ? nt : t)) };
+        }
 
-      const descendants = new Set<string>([id]);
-      if (next) {
-        let grew = true;
-        while (grew) {
-          grew = false;
-          for (const t of tasks) {
-            if (t.parentId && descendants.has(t.parentId) && !descendants.has(t.id)) {
-              descendants.add(t.id);
-              grew = true;
+        const next = !target.isCompleted;
+        const descendants = new Set<string>([id]);
+        if (next) {
+          let grew = true;
+          while (grew) {
+            grew = false;
+            for (const t of s.tasks) {
+              if (t.parentId && descendants.has(t.parentId) && !descendants.has(t.id)) {
+                descendants.add(t.id);
+                grew = true;
+              }
             }
           }
         }
-      }
 
-      const changed: Task[] = [];
-      const updated = tasks.map((t) => {
-        if (t.id === id || (next && descendants.has(t.id))) {
-          const nt = { ...t, isCompleted: next };
-          changed.push(nt);
-          return nt;
-        }
-        return t;
+        const updated = s.tasks.map((t) => {
+          if (t.id === id || (next && descendants.has(t.id))) {
+            const nt = { ...t, isCompleted: next };
+            changed.push(nt);
+            return nt;
+          }
+          return t;
+        });
+        return { tasks: updated };
       });
-      set({ tasks: updated });
-      saveTasks(changed);
+
+      if (changed.length) saveTasks(changed);
     },
 
     toggleCollapse: (id) => {
@@ -453,24 +469,35 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     deleteTask: async (id) => {
-      const tasks = get().tasks;
-      const doomed = new Set<string>([id]);
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const t of tasks) {
-          if (t.parentId && doomed.has(t.parentId) && !doomed.has(t.id)) {
-            doomed.add(t.id);
-            grew = true;
+      let taskMap = new Map<string, string | null>();
+      let doomedIds: string[] = [];
+
+      set((s) => {
+        const doomed = new Set<string>([id]);
+        let grew = true;
+        while (grew) {
+          grew = false;
+          for (const t of s.tasks) {
+            if (t.parentId && doomed.has(t.parentId) && !doomed.has(t.id)) {
+              doomed.add(t.id);
+              grew = true;
+            }
           }
         }
+        for (const t of s.tasks) {
+          if (doomed.has(t.id)) taskMap.set(t.id, t.projectId);
+        }
+        doomedIds = [...doomed];
+        return { tasks: s.tasks.filter((t) => !doomed.has(t.id)) };
+      });
+
+      try {
+        if (ownerId && doomedIds.length) await repo.deleteTasks(doomedIds, ownerId, taskMap);
+      } catch (e) {
+        console.error("deleteTask failed", e);
+        await reload();
+        return;
       }
-      const taskMap = new Map<string, string | null>();
-      for (const t of tasks) {
-        if (doomed.has(t.id)) taskMap.set(t.id, t.projectId);
-      }
-      set({ tasks: tasks.filter((t) => !doomed.has(t.id)) });
-      if (ownerId) await repo.deleteTasks([...doomed], ownerId, taskMap);
       cache();
     },
 
@@ -488,6 +515,10 @@ export const useChronoStore = create<ChronoState>((set, get) => {
 
     setTaskOrder: (id, order) => {
       patchTask(id, (t) => ({ ...t, order }));
+    },
+
+    moveTask: (id, priority, order) => {
+      patchTask(id, (t) => ({ ...t, priority, order }));
     },
 
     setProjectView: (projectId, view) => {
@@ -648,7 +679,9 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     joinLobby: async (code, password, name, avatar) => {
       try {
         const joinedId = await repo.joinProject(code.trim(), password, name, avatar);
-        await repo.addMember(joinedId, auth.currentUser!.uid, name, avatar);
+        const uid = auth.currentUser?.uid;
+        if (!uid) throw new Error("Необходима авторизация");
+        await repo.addMember(joinedId, uid, name, avatar);
         await reload();
         set({
           activeProjectId: joinedId,

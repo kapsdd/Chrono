@@ -7,7 +7,7 @@ import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
 import { TaskCard } from "./TaskCard";
 
-const ord = (n: TaskNode) => n.order ?? 0;
+const ord = (n: { order?: number }) => n.order ?? 0;
 
 // Recursive renderer. Top-level rows are drag-reorderable; nested subtrees are
 // rendered without drag to keep the parent-child structure intact.
@@ -19,6 +19,7 @@ export function TaskTree({
   topLevel?: boolean;
 }) {
   const setTaskOrder = useChronoStore((s) => s.setTaskOrder);
+  const allTasks = useChronoStore((s) => s.tasks);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
@@ -28,8 +29,13 @@ export function TaskTree({
       setOverId(null);
       return;
     }
-    const list = nodes.filter((n) => n.id !== dragId);
+    const list = allTasks.filter((n) => n.id !== dragId);
     const idx = list.findIndex((n) => n.id === targetId);
+    if (idx === -1) {
+      setDragId(null);
+      setOverId(null);
+      return;
+    }
     const target = list[idx];
     const prev = list[idx - 1];
     const newOrder = prev ? (ord(prev) + ord(target)) / 2 : ord(target) - 1;

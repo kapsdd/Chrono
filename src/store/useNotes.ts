@@ -8,7 +8,6 @@ import type { Note } from "@/lib/types";
 // would be swapping save()/load() for a repo call.
 
 const STORAGE_PREFIX = "chrono.notes:";
-const LAST_OWNER_KEY = "chrono.notes:lastOwner";
 
 function ownerKey(ownerId: string | null) {
   return `${STORAGE_PREFIX}${ownerId ?? "guest"}`;
@@ -37,7 +36,6 @@ function save(ownerId: string | null, notes: Note[]) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(ownerKey(ownerId), JSON.stringify(notes));
-    window.localStorage.setItem(LAST_OWNER_KEY, ownerId ?? "guest");
   } catch {
     /* quota / private mode */
   }
@@ -72,11 +70,12 @@ export const useNotes = create<NotesState>((set, get) => ({
           ? -1
           : 1,
     );
+    const prev = get().activeId;
     set({
       notes: sorted,
       ownerId,
       hydrated: true,
-      activeId: sorted[0]?.id ?? null,
+      activeId: sorted.find((n) => n.id === prev)?.id ?? sorted[0]?.id ?? null,
     });
   },
 

@@ -7,7 +7,7 @@ import { useChronoStore } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
 import { repo } from "@/lib/repo";
 import { db } from "@/lib/firebase";
-import { ref, onValue, off } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import { errMessage } from "@/lib/errMessage";
 
 interface LobbyMember {
@@ -90,7 +90,7 @@ export function ProjectMembers({
   };
 
   // Only the real owner can open/close the lobby (the RPC enforces it too).
-  const isOwner = !session || !live.ownerId || session.id === live.ownerId;
+  const isOwner = Boolean(session && live.ownerId && session.id === live.ownerId);
 
   // Load the lobby membership list for a shared project.
   const loadMembers = useCallback(() => {
@@ -116,7 +116,7 @@ export function ProjectMembers({
     const membersRef = ref(db, `shared/${live.id}/members`);
     const unsub = onValue(membersRef, () => loadMembers());
     return () => {
-      off(membersRef, "value", unsub);
+      unsub();
     };
   }, [live.id, live.published, loadMembers]);
 

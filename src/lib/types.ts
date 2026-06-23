@@ -69,13 +69,8 @@ export interface Session {
   id: string;
   username: string;
   avatar?: string;
-  provider: "discord" | "guest";
+  provider: "google" | "guest";
   grantedAt: string;
-}
-
-export interface Tag {
-  id: string;
-  name: string;
 }
 
 export interface Task {

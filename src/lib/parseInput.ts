@@ -10,7 +10,7 @@ import type { ParsedInput, Priority } from "@/lib/types";
 
 const PROJECT_RE = /(?:^|\s)\/([^\s#]+)/g;
 const TAG_RE = /(?:^|\s)#([^\s#]+)/g;
-const PRIORITY_RE = /(?:^|\s)(!{1,3})(?=\s|$)/g;
+const PRIORITY_RE = /(?:^|\s)(!{1,})(?=\s|$)/g;
 
 export function parseInput(raw: string): ParsedInput {
   let project: string | null = null;
@@ -38,5 +38,5 @@ export function parseInput(raw: string): ParsedInput {
     .replace(/\s+/g, " ")
     .trim();
 
-  return { title, project, tags, priority };
+  return { title: title || "", project, tags, priority };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import type { Recurrence, Task } from "@/lib/types";
 import { useChronoStore } from "@/store/useChronoStore";
@@ -34,6 +34,12 @@ function dueLabel(due: string | null | undefined): string {
 export function HabitsView({ tasks }: { tasks: Task[] }) {
   const toggleComplete = useChronoStore((s) => s.toggleComplete);
   const setRecurrence = useChronoStore((s) => s.setRecurrence);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const habits = useMemo(
     () => tasks.filter((t) => t.recurrence && !t.isCompleted),
@@ -45,7 +51,6 @@ export function HabitsView({ tasks }: { tasks: Task[] }) {
     return Date.now() - Date.parse(t.lastCompletedAt) < PERIOD_MS[t.recurrence];
   };
 
-  // Pending check-ins first, then the ones already done this period.
   const sorted = useMemo(
     () => [...habits].sort((a, b) => Number(isDone(a)) - Number(isDone(b))),
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Task } from "@/lib/types";
 import { downloadICS } from "@/lib/ics";
 
@@ -18,8 +18,13 @@ const sameDay = (a: Date, b: Date) =>
 // Month grid of tasks placed on their due dates, plus a one-click .ics export
 // (#12). Weeks start on Monday.
 export function CalendarView({ tasks }: { tasks: Task[] }) {
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+
+  useEffect(() => {
+    const id = window.setInterval(() => setToday(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const dated = useMemo(() => tasks.filter((t) => t.due), [tasks]);
 

@@ -25,15 +25,20 @@ export function buildTree(tasks: Task[]): TaskNode[] {
   const sortLevel = (a: Task, b: Task) =>
     (a.order ?? 0) - (b.order ?? 0) || (a.createdAt < b.createdAt ? 1 : -1);
 
-  const walk = (parentId: string | null, depth: number): TaskNode[] =>
+  const walk = (parentId: string | null, depth: number, visited: Set<string>): TaskNode[] =>
     (childrenOf.get(parentId) ?? [])
+      .filter((t) => {
+        if (visited.has(t.id)) return false;
+        visited.add(t.id);
+        return true;
+      })
       .slice()
       .sort(sortLevel)
       .map((t) => ({
         ...t,
         depth,
-        children: walk(t.id, depth + 1),
+        children: walk(t.id, depth + 1, visited),
       }));
 
-  return walk(null, 0);
+  return walk(null, 0, new Set());
 }

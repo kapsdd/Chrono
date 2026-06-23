@@ -115,3 +115,11 @@ CLAUDE.md.bak
 *.orig
 .cache/
 .parcel-cache/
+
+# ---------- known vulnerabilities (devDependencies only, no prod impact) ----------
+# electron@<=39.8.4 — 10 high: ASAR bypass, use-after-free, IPC spoofing, etc.
+#   fix: npm audit fix --force → electron@42.4.1 (breaking change)
+# postcss@<8.5.10 — 1 moderate: XSS via unescaped </style>
+#   fix: bundled inside next, no standalone fix yet
+# tar@<=7.5.15 — 2 high: path traversal, symlink poisoning
+#   fix: npm audit fix --force → electron-builder@26.15.3 (breaking change)

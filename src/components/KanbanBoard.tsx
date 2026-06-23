@@ -21,22 +21,20 @@ export function KanbanBoard({
 }) {
   const toggleComplete = useChronoStore((s) => s.toggleComplete);
   const deleteTask = useChronoStore((s) => s.deleteTask);
-  const setPriority = useChronoStore((s) => s.setPriority);
-  const setTaskOrder = useChronoStore((s) => s.setTaskOrder);
+  const moveTask = useChronoStore((s) => s.moveTask);
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Priority | null>(null);
 
   const colItems = (p: Priority) =>
-    tasks.filter((t) => t.priority === p && !t.isCompleted).sort((a, b) => ord(a) - ord(b));
+    tasks.filter((t) => (t.priority ?? 0) === p && !t.isCompleted).sort((a, b) => ord(a) - ord(b));
 
   // Drop onto a column body → append to the end of that column.
   const dropToColumn = (p: Priority) => {
     if (!dragId) return;
     const items = colItems(p).filter((t) => t.id !== dragId);
     const last = items[items.length - 1];
-    setPriority(dragId, p);
-    setTaskOrder(dragId, last ? ord(last) + 1 : 0);
+    moveTask(dragId, p, last ? ord(last) + 1 : 0);
     setDragId(null);
     setOverCol(null);
   };
@@ -53,8 +51,7 @@ export function KanbanBoard({
     const target = items[idx];
     const prev = items[idx - 1];
     const newOrder = prev ? (ord(prev) + ord(target)) / 2 : ord(target) - 1;
-    setPriority(dragId, p);
-    setTaskOrder(dragId, newOrder);
+    moveTask(dragId, p, newOrder);
     setDragId(null);
     setOverCol(null);
   };
@@ -130,7 +127,7 @@ export function KanbanBoard({
                       />
                       <span className="min-w-0 flex-1 text-[13.5px] text-white/85">{t.title}</span>
                     </div>
-                    {t.tags.length > 0 && (
+                    {t.tags && t.tags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1 pl-7">
                         {t.tags.slice(0, 3).map((tag) => (
                           <TagChip key={tag} name={tag} />

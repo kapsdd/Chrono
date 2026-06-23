@@ -287,7 +287,7 @@ function SettingsPanel() {
   const achievementThemesEnabled = useUI((s) => s.achievementThemesEnabled);
   const setAchievementThemesEnabled = useUI((s) => s.setAchievementThemesEnabled);
   const setThemeFromAchievement = useUI((s) => s.setThemeFromAchievement);
-  const completedCount = tasks.filter((t) => t.isCompleted).length;
+  const completedCount = useMemo(() => tasks.filter((t) => t.isCompleted).length, [tasks]);
 
   // Find the next milestone for the progress meter.
   const sorted = [...ACHIEVEMENT_THEMES].sort((a, b) => a.tasks - b.tasks);
@@ -314,7 +314,7 @@ function SettingsPanel() {
             <div className="flex-1">
               <div className="text-[14px] text-white/85">{session.username}</div>
               <div className="text-[12px] text-white/40">
-                {session.provider === "discord" ? "Discord" : "Гостевая сессия"}
+                {session.provider === "google" ? "Google" : "Гостевая сессия"}
               </div>
             </div>
             <button

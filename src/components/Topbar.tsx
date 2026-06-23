@@ -7,11 +7,7 @@ import { TimerButton } from "./TimerButton";
 import { NotificationsButton } from "./NotificationsButton";
 import { useChronoStore } from "@/store/useChronoStore";
 import { useUI } from "@/store/useUI";
-
-function focusSmartInput() {
-  const el = document.getElementById("smart-input") as HTMLInputElement | null;
-  el?.focus();
-}
+import { focusSmartInput } from "@/lib/ui";
 
 export function Topbar({ onOpenFriends }: { onOpenFriends: () => void }) {
   const query = useChronoStore((s) => s.query);

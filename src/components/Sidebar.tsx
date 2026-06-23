@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import { SPRING } from "@/lib/motion";
@@ -8,11 +8,7 @@ import { Icon, type IconName } from "./icons";
 import { APP_ICON } from "@/lib/brand";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
-
-function focusSmartInput() {
-  const el = document.getElementById("smart-input") as HTMLInputElement | null;
-  el?.focus();
-}
+import { focusSmartInput } from "@/lib/ui";
 
 export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
   const projects = useChronoStore((s) => s.projects);
@@ -28,13 +24,20 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
 
   const [newName, setNewName] = useState("");
 
-  const activeCount = (pid: string | null) =>
-    tasks.filter(
-      (t) => !t.isCompleted && (pid === null ? true : t.projectId === pid),
-    ).length;
+  const activeCountMap = useMemo(() => {
+    const map = new Map<string | null, number>();
+    for (const t of tasks) {
+      if (t.isCompleted) continue;
+      const key = t.projectId ?? null;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  }, [tasks]);
 
-  const archivedCount = tasks.filter((t) => t.isCompleted).length;
-  const habitCount = tasks.filter((t) => t.recurrence && !t.isCompleted).length;
+  const activeCount = (pid: string | null) => activeCountMap.get(pid) ?? 0;
+
+  const archivedCount = useMemo(() => tasks.filter((t) => t.isCompleted).length, [tasks]);
+  const habitCount = useMemo(() => tasks.filter((t) => t.recurrence && !t.isCompleted).length, [tasks]);
 
   // "Совместные" = either you've opened it to the lobby (`published`) or it
   // isn't your project at all (you joined someone else's via code). We don't

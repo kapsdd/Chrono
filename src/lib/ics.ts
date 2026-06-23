@@ -37,6 +37,7 @@ export function buildICS(tasks: Task[], stamp: Date): string {
   const dtstamp = toICSDate(stamp);
   for (const t of dated) {
     const start = new Date(t.due as string);
+    if (isNaN(start.getTime())) continue;
     const end = new Date(start.getTime() + 30 * 60 * 1000);
     lines.push(
       "BEGIN:VEVENT",
