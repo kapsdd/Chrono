@@ -1,0 +1,32 @@
+Origin: CHRONO
+Label: CHRONO
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: CHRONO Task Manager APT Repository
+Date: Fri, 10 Jul 2026 17:40:35 +0000
+MD5Sum:
+ 49ce44cb930d46b02ce4a6892a3418b8              190 Release
+ 3f0e474ae11a01faed7c236fd617fa72              679 main/binary-amd64/Packages
+ d82146d2faa9ce2ce676246b75af5174              487 main/binary-amd64/Packages.gz
+ 3f0e474ae11a01faed7c236fd617fa72              679 main/binary-arm64/Packages
+ d82146d2faa9ce2ce676246b75af5174              487 main/binary-arm64/Packages.gz
+SHA1:
+ 77c0042fe15f3793b017ca28833941f58c81ca9b              190 Release
+ 0d25a9340f400da86eddf9349349a6647a091ec6              679 main/binary-amd64/Packages
+ 4d8d1d110b630939f6d7d8b8218a068d84960c8c              487 main/binary-amd64/Packages.gz
+ 0d25a9340f400da86eddf9349349a6647a091ec6              679 main/binary-arm64/Packages
+ 4d8d1d110b630939f6d7d8b8218a068d84960c8c              487 main/binary-arm64/Packages.gz
+SHA256:
+ f8f532bcc0af3c7500675e3a4d3f3115b5ed2c32e70526c6d91bbd9669aa596c              190 Release
+ 0f968413e912299a7336a91961470c0e9ecef44bd3193204f2e48e8493209d9a              679 main/binary-amd64/Packages
+ d07083b1e5d4a97fc7b39edeb2ad08498f5f6205dc7f678673bb2c740725a454              487 main/binary-amd64/Packages.gz
+ 0f968413e912299a7336a91961470c0e9ecef44bd3193204f2e48e8493209d9a              679 main/binary-arm64/Packages
+ d07083b1e5d4a97fc7b39edeb2ad08498f5f6205dc7f678673bb2c740725a454              487 main/binary-arm64/Packages.gz
+SHA512:
+ 78400bd3548d2f1969366110bb1f3c0324c1a440c60c3f294aa1b43e4241e6c8e0c6751006557d8ab64bc95f4adeda99becd8b56da4a77a08140837f3d77a02b              190 Release
+ 02ab6d031405b6d3e2f08fbb9454bf002a376558f8535b034952bd7938a9264a91e9327fa2f2f674cab0e0e94b5e5422afbd339456ac0e17399978ebb2a42071              679 main/binary-amd64/Packages
+ df3d117da6ef05d5997a361864a045e3c5c4248fa01d54bd07f006f4afe735ca06c7dc2e189887ddb2b55914ccdd36d647ff711fb337a80ef0d6ce9830e9865e              487 main/binary-amd64/Packages.gz
+ 02ab6d031405b6d3e2f08fbb9454bf002a376558f8535b034952bd7938a9264a91e9327fa2f2f674cab0e0e94b5e5422afbd339456ac0e17399978ebb2a42071              679 main/binary-arm64/Packages
+ df3d117da6ef05d5997a361864a045e3c5c4248fa01d54bd07f006f4afe735ca06c7dc2e189887ddb2b55914ccdd36d647ff711fb337a80ef0d6ce9830e9865e              487 main/binary-arm64/Packages.gz

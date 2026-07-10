@@ -1,0 +1,20 @@
+Package: chrono
+Version: 3.2.1
+Architecture: amd64
+Maintainer: CHRONO <chrono@example.com>
+Installed-Size: 271260
+Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
+Recommends: libappindicator3-1
+Filename: pool/main/CHRONO-3.2.1-amd64.deb
+Size: 76583632
+MD5sum: e65553a361ebe5be71c5a882696a1aae
+SHA1: bc76fb20a4587718afd8781ed09e4cee6f9c0b8a
+SHA256: dd712ec40a0507b61def849a36e7bf8a69ed0e4c26dd02571821d3a18127446e
+Section: Office
+Priority: optional
+Homepage: https://github.com/kapsdd/Chrono
+Description:
+  CHRONO — premium dark-green glassmorphism task manager
+License: unknown
+Vendor: CHRONO <chrono@example.com>
+
