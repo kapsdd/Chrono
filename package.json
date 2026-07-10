@@ -12,7 +12,13 @@
     "electron": "electron .",
     "app:dev": "next build && electron .",
     "dist": "next build && electron-builder",
-    "package:win": "next build && electron-packager . CHRONO --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=false --ignore=\"/node_modules\" --ignore=\"/(src|prisma|shablon|knopki|release|\\.next|\\.claude)\" --ignore=\"\\.(ts|tsx|tsbuildinfo|log)$\""
+    "dist:linux": "next build && electron-builder --linux",
+    "dist:linux:deb": "next build && electron-builder --linux deb",
+    "dist:linux:appimage": "next build && electron-builder --linux AppImage",
+    "dist:linux:rpm": "next build && electron-builder --linux rpm",
+    "dist:all": "next build && electron-builder --win --linux",
+    "package:win": "next build && electron-packager . CHRONO --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=false --ignore=\"/node_modules\" --ignore=\"/(src|prisma|shablon|knopki|release|\\.next|\\.claude)\" --ignore=\"\\.(ts|tsx|tsbuildinfo|log)$\"",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@fontsource/inter": "^5.1.1",
@@ -70,6 +76,35 @@
       "uninstallerIcon": "okno/icon.ico",
       "runAfterFinish": true,
       "artifactName": "CHRONO-Setup-${version}.${ext}"
-    }
+    },
+    "linux": {
+      "target": [
+        { "target": "deb", "arch": ["x64", "arm64"] },
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "rpm", "arch": ["x64"] }
+      ],
+      "icon": "okno/icon.png",
+      "category": "Office",
+      "executableName": "chronotasks",
+      "description": "CHRONO — premium dark-green glassmorphism task manager",
+      "desktop": {
+        "Name": "CHRONO",
+        "GenericName": "Task Manager",
+        "Comment": "Premium task manager",
+        "StartupWMClass": "chronotasks",
+        "Keywords": "tasks;todo;planner;productivity;"
+      },
+      "artifactName": "CHRONO-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "depends": ["libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libsecret-1-0"],
+      "packageCategory": "Office",
+      "priority": "optional",
+      "maintainer": "CHRONO <chrono@example.com>"
+    },
+    "rpm": {
+      "depends": ["gtk3", "libnotify", "nss", "libXScrnSaver", "libXtst", "xdg-utils", "at-spi2-core", "libuuid", "libsecret"]
+    },
+    "appImage": {}
   }
 }

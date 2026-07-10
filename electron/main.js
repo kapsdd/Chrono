@@ -218,6 +218,7 @@ function startServer() {
 const APP_PORT = 53110;
 
 const ICON_PATH = path.join(__dirname, "..", "okno", "icon.png");
+const IS_LINUX = process.platform === "linux";
 
 async function createWindow() {
   const port = await startServer();
@@ -227,8 +228,9 @@ async function createWindow() {
     minWidth: 900,
     minHeight: 600,
     frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
+    // Transparent windows are unreliable on some Linux WMs; disable there
+    transparent: !IS_LINUX,
+    backgroundColor: IS_LINUX ? "#1a0f2e" : "#00000000",
     hasShadow: false,
     autoHideMenuBar: true,
     icon: ICON_PATH,
@@ -241,6 +243,21 @@ async function createWindow() {
   });
   win.once("ready-to-show", () => win.show());
   win.loadURL(`http://127.0.0.1:${port}/`);
+
+  // Disable devtools completely
+  win.webContents.on("devtools-opened", () => {
+    win.webContents.closeDevTools();
+  });
+
+  // Block F12, Ctrl+Shift+I, Ctrl+Shift+J
+  win.webContents.on("before-input-event", (event, input) => {
+    if (
+      input.key === "F12" ||
+      (input.control && input.shift && (input.key === "I" || input.key === "J" || input.key === "C"))
+    ) {
+      event.preventDefault();
+    }
+  });
 
   win.webContents.on("did-finish-load", () => {
     win.webContents.insertCSS(

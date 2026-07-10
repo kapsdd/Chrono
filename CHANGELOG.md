@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.3.0 (unreleased)
+
+### Новое
+- **Linux-поддержка** — приложение теперь собирается в `.deb`, `.AppImage` и `.rpm` пакеты
+- Установка через APT: `sudo apt install chronotasks`
+- Автоматическая сборка и публикация через GitHub Actions
+
 ## v3.2.1 (23.06.2026)
 
 ### Исправления
