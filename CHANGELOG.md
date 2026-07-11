@@ -1,11 +1,13 @@
 # Changelog
 
-## v3.3.0 (unreleased)
+## v3.4.1 (unreleased)
 
 ### Новое
 - **Linux-поддержка** — приложение теперь собирается в `.deb`, `.AppImage` и `.rpm` пакеты
-- Установка через APT: `sudo apt install chronotasks`
+- Установка через APT: `sudo add-apt-repository ppa:kapsdd/chrono && sudo apt install chronotasks`
 - Автоматическая сборка и публикация через GitHub Actions
+- Sandbox права настраиваются автоматически при установке
+- Google авторизация опциональна — приложение работает локально без настройки
 
 ## v3.2.1 (23.06.2026)
 
