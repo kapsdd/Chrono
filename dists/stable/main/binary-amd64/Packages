@@ -2,14 +2,14 @@ Package: chrono
 Version: 3.2.1
 Architecture: amd64
 Maintainer: CHRONO <chrono@example.com>
-Installed-Size: 271269
+Installed-Size: 271270
 Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
 Recommends: libappindicator3-1
 Filename: pool/main/CHRONO-3.2.1-amd64.deb
-Size: 76759788
-MD5sum: 80af448b3b4ecdd20ea523dca1e222af
-SHA1: 4c923128c6a17ed0bcf8579a9942ca33e84688a9
-SHA256: e8385cde29cadc8316b88b9ca6506e133cc4b09360163f7853e54692e024dfc8
+Size: 76737506
+MD5sum: 5a05df6ee434d3f485cb029c67f5e5bf
+SHA1: bf175437b09615c20f0a9287a2706cf1185bdbd7
+SHA256: c7e74a40b790b4177431f3d2ef5d246b8a2717bb4de8a0ed0dcf30692bb0cde6
 Section: Office
 Priority: optional
 Homepage: https://github.com/kapsdd/Chrono
