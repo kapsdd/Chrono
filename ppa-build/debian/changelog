@@ -1,3 +1,10 @@
+chronotasks (3.3.6) resolute; urgency=medium
+
+  * Embed Google Client ID, remove secret requirement
+  * Fix sandbox permissions via postinst script
+
+ -- kapsdd <kapsdst@gmail.com>  Fri, 11 Jul 2026 13:55:00 +0000
+
 chronotasks (3.3.2) resolute; urgency=medium
 
   * Fix build: create install directory before copy
