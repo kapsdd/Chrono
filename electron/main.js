@@ -59,7 +59,7 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 const AUTH_PORT = 53117;
 const AUTH_PATH = "/auth/callback";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "514930791311-7segq89uui29nbpk3ihr6ftue48e7m84.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_REDIRECT_URI = `http://127.0.0.1:${AUTH_PORT}${AUTH_PATH}`;
 
@@ -117,6 +117,9 @@ function exchangeCodeForTokens(code, codeVerifier) {
 }
 
 function captureGoogleAuth() {
+  if (!GOOGLE_CLIENT_SECRET) {
+    return Promise.resolve({ idToken: null, error: "Google OAuth not configured. Set GOOGLE_CLIENT_SECRET in .env" });
+  }
   return new Promise((resolve) => {
     let settled = false;
     const done = (v) => {
