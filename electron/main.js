@@ -87,15 +87,18 @@ function sha256Base64Url(str) {
 
 function exchangeCodeForTokens(code, codeVerifier) {
   return new Promise((resolve, reject) => {
-    const params = {
+    const params = new URLSearchParams({
       code,
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
       code_verifier: codeVerifier,
-    };
-    if (GOOGLE_CLIENT_SECRET) params.client_secret = GOOGLE_CLIENT_SECRET;
-    const body = new URLSearchParams(params);
+    });
+    // Desktop OAuth clients must NOT send client_secret
+    if (GOOGLE_CLIENT_SECRET) {
+      params.set("client_secret", GOOGLE_CLIENT_SECRET);
+    }
+    const body = params;
 
     const req = https.request("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -105,9 +108,14 @@ function exchangeCodeForTokens(code, codeVerifier) {
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => {
         try {
-          resolve(JSON.parse(data));
+          const parsed = JSON.parse(data);
+          if (parsed.error) {
+            reject(new Error(parsed.error_description || parsed.error));
+          } else {
+            resolve(parsed);
+          }
         } catch (e) {
-          reject(new Error("Failed to parse token response"));
+          reject(new Error("Failed to parse token response: " + data));
         }
       });
     });
