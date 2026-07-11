@@ -6,10 +6,10 @@ Installed-Size: 271260
 Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
 Recommends: libappindicator3-1
 Filename: pool/main/CHRONO-3.2.1-amd64.deb
-Size: 76755330
-MD5sum: 2d8074c840c66a5cbacdf3d0210deb63
-SHA1: e1dba16fd6e752b0a4bd4e6854ab6ba085a1e866
-SHA256: f6af3bcff00cd5fac78d4760dbef2ae6a940e406892a850e29fee37619ef91a0
+Size: 76739228
+MD5sum: 084843b7a2649e2c92d64866ce4adfd7
+SHA1: 40c6ae88f31968242ca3ebcd0d684f94f4633226
+SHA256: d485c46470e196e882c25ae88f3e1f8b82a7cc7c22908a8547c981de2aa31cc6
 Section: Office
 Priority: optional
 Homepage: https://github.com/kapsdd/Chrono
