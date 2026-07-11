@@ -1,3 +1,9 @@
+chronotasks (3.3.9) resolute; urgency=medium
+
+  * Fix: omit client_secret for Desktop OAuth PKCE flow
+
+ -- kapsdd <kapsdst@gmail.com>  Fri, 11 Jul 2026 17:25:00 +0000
+
 chronotasks (3.3.6) resolute; urgency=medium
 
   * Embed Google Client ID, remove secret requirement

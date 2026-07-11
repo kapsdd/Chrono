@@ -60,7 +60,7 @@ const AUTH_PORT = 53117;
 const AUTH_PATH = "/auth/callback";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "514930791311-7segq89uui29nbpk3ihr6ftue48e7m84.apps.googleusercontent.com";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "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";
 const GOOGLE_REDIRECT_URI = `http://127.0.0.1:${AUTH_PORT}${AUTH_PATH}`;
 
 function googleAuthUrl(codeChallenge) {
@@ -87,18 +87,14 @@ function sha256Base64Url(str) {
 
 function exchangeCodeForTokens(code, codeVerifier) {
   return new Promise((resolve, reject) => {
-    const params = new URLSearchParams({
+    const body = new URLSearchParams({
       code,
       client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
       redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
       code_verifier: codeVerifier,
     });
-    // Desktop OAuth clients must NOT send client_secret
-    if (GOOGLE_CLIENT_SECRET) {
-      params.set("client_secret", GOOGLE_CLIENT_SECRET);
-    }
-    const body = params;
 
     const req = https.request("https://oauth2.googleapis.com/token", {
       method: "POST",
