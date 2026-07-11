@@ -1,0 +1,4 @@
+#Mon Jul 06 19:59:17 CEST 2026
+base.0=C\:\\Users\\Aers\\Desktop\\Chrono-main1\\AndroidApp\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

@@ -1,0 +1,12 @@
+Source: chronotasks
+Section: utils
+Priority: optional
+Maintainer: kapsdd <kapsdst@gmail.com>
+Build-Depends: debhelper (>= 10), wget
+Standards-Version: 4.1.2
+
+Package: chronotasks
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: CHRONO - Premium task manager
+ CHRONO is a dark-green glassmorphism task manager.

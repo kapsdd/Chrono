@@ -25,7 +25,8 @@ export type Theme =
   | "volcano"
   | "sakura"
   | "cyber"
-  | "autumn";
+  | "autumn"
+  | "steel";
 
 export interface ThemeMeta {
   id: Theme;
@@ -62,6 +63,7 @@ export const THEMES: ThemeMeta[] = [
   { id: "sakura", label: "Сакура", swatch: "linear-gradient(135deg,#fce7f3,#fbcfe8,#f9a8d4)" },
   { id: "cyber", label: "Кибер", swatch: "linear-gradient(135deg,#3b82f6,#d946ef)" },
   { id: "autumn", label: "Осень", swatch: "linear-gradient(135deg,#78350f,#c2410c,#eab308)" },
+  { id: "steel", label: "Серый", swatch: "linear-gradient(135deg,#374151,#6b7280,#9ca3af)" },
 ];
 
 export const ACHIEVEMENT_THEMES: AchievementTheme[] = [

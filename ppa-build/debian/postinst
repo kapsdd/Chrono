@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+if [ -f /opt/CHRONO/chrome-sandbox ]; then
+  chown root:root /opt/CHRONO/chrome-sandbox
+  chmod 4755 /opt/CHRONO/chrome-sandbox
+fi

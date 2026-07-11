@@ -19,6 +19,7 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
   const setActiveProject = useChronoStore((s) => s.setActiveProject);
   const createProject = useChronoStore((s) => s.createProject);
   const renameProject = useChronoStore((s) => s.renameProject);
+  const setProjectColor = useChronoStore((s) => s.setProjectColor);
   const deleteProject = useChronoStore((s) => s.deleteProject);
   const session = useSession((s) => s.session);
 
@@ -124,6 +125,7 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
                   active={activeView === "project" && activeProjectId === p.id}
                   onOpen={() => setActiveProject(p.id)}
                   onRename={(name) => renameProject(p.id, name)}
+                  onColorChange={(c) => setProjectColor(p.id, c)}
                   onDelete={() => void deleteProject(p.id)}
                   youOwn={youOwn}
                 />
@@ -148,6 +150,7 @@ export function Sidebar({ onJoinLobby }: { onJoinLobby?: () => void }) {
               active={activeView === "project" && activeProjectId === p.id}
               onOpen={() => setActiveProject(p.id)}
               onRename={(name) => renameProject(p.id, name)}
+              onColorChange={(c) => setProjectColor(p.id, c)}
               onDelete={() => void deleteProject(p.id)}
               youOwn
             />
@@ -225,6 +228,7 @@ function ProjectRow({
   active,
   onOpen,
   onRename,
+  onColorChange,
   onDelete,
   youOwn,
 }: {
@@ -234,9 +238,8 @@ function ProjectRow({
   active: boolean;
   onOpen: () => void;
   onRename: (name: string) => void;
+  onColorChange: (color: string) => void;
   onDelete: () => void;
-  /** Whether the signed-in user owns this project. Controls whether the trash
-   *  button reads as «Удалить» or «Покинуть». */
   youOwn: boolean;
 }) {
   const removeLabel = youOwn ? "Удалить" : "Покинуть";
@@ -244,6 +247,9 @@ function ProjectRow({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const [confirm, setConfirm] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
+
+  const COLORS = ["#a78bfa", "#f472b6", "#22d3ee", "#facc15", "#34d399", "#fb7185", "#818cf8", "#f59e0b", "#ef4444", "#10b981", "#06b6d4", "#ec4899"];
 
   if (editing) {
     return (
@@ -292,11 +298,27 @@ function ProjectRow({
       )}
       <button onClick={onOpen} className="relative flex min-w-0 flex-1 items-center gap-2.5">
         <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          className="h-2.5 w-2.5 shrink-0 cursor-pointer rounded-full transition-transform hover:scale-150"
           style={color ? { backgroundColor: color, boxShadow: `0 0 8px ${color}` } : undefined}
+          onClick={(e) => { e.stopPropagation(); setShowPalette((v) => !v); }}
+          title="Изменить цвет"
         />
         <span className="truncate">{name}</span>
       </button>
+      {showPalette && (
+        <div className="absolute left-8 top-full z-50 mt-1 flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/80 p-2 backdrop-blur-sm">
+          {COLORS.map((c) => (
+            <button
+              key={c}
+              onClick={(e) => { e.stopPropagation(); onColorChange(c); setShowPalette(false); }}
+              className={`h-5 w-5 rounded-full border transition-transform hover:scale-110 ${
+                color?.toLowerCase() === c.toLowerCase() ? "border-white/60" : "border-white/10"
+              }`}
+              style={{ backgroundColor: c, boxShadow: `0 0 6px ${c}` }}
+            />
+          ))}
+        </div>
+      )}
 
       {confirm ? (
         <div className="relative flex items-center gap-1">

@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Download pre-built deb from GitHub Releases
+	wget -q "https://github.com/kapsdd/Chrono/releases/download/v3.3.0/CHRONO-3.2.1-amd64.deb" -O chronotasks-amd64.deb
+	dpkg-deb -x chronotasks-amd64.deb debian/chronotasks/
+
+override_dh_auto_install:
+	# Files already extracted in override_dh_auto_build
+
+override_dh_shlibdeps:
+	dh_shlibdeps || true
+
+override_dh_strip:
+	dh_strip || true

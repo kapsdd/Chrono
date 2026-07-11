@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	mkdir -p root
+	dpkg-deb -x chronotasks.deb root/
+
+override_dh_auto_install:
+	mkdir -p debian/chronotasks
+	cp -a root/* debian/chronotasks/
+
+override_dh_shlibdeps:
+	dh_shlibdeps -ldebian/chronotasks/usr/lib/electron || true
+
+override_dh_strip:
+	dh_strip || true

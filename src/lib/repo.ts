@@ -1,6 +1,6 @@
 "use client";
 
-import type { Friend, Project, Task } from "@/lib/types";
+import type { Friend, Note, Project, Task } from "@/lib/types";
 import {
   ref,
   set,
@@ -28,6 +28,7 @@ import { normalizeKanbanColumns } from "@/lib/kanban";
 // ---- path helpers ----------------------------------------------------------
 const userProjects = (uid: string) => `users/${uid}/projects`;
 const userTasks = (uid: string) => `users/${uid}/tasks`;
+const userNotes = (uid: string) => `users/${uid}/notes`;
 const userFriends = (uid: string) => `users/${uid}/friends`;
 const sharedTasks = (pid: string) => `shared/${pid}/tasks`;
 const sharedMembers = (pid: string) => `shared/${pid}/members`;
@@ -132,6 +133,31 @@ function dbToFriend(r: Record<string, unknown>): Friend {
   };
 }
 
+// ---- note serialization ----------------------------------------------------
+function noteToDB(n: Note) {
+  return {
+    id: n.id,
+    title: n.title,
+    content: n.content,
+    pinned: n.pinned ?? false,
+    color: n.color ?? null,
+    created_at: n.createdAt,
+    updated_at: n.updatedAt,
+  };
+}
+
+function dbToNote(r: Record<string, unknown>): Note {
+  return {
+    id: r.id as string,
+    title: (r.title as string) ?? "",
+    content: (r.content as string) ?? "",
+    pinned: (r.pinned as boolean) ?? false,
+    color: (r.color as string) ?? undefined,
+    createdAt: (r.created_at as string) ?? new Date().toISOString(),
+    updatedAt: (r.updated_at as string) ?? new Date().toISOString(),
+  };
+}
+
 // ---- helpers ---------------------------------------------------------------
 async function getSnapshot<T>(
   path: string,
@@ -160,15 +186,17 @@ async function getSharedProjectIds(uid: string): Promise<string[]> {
 export interface Snapshot {
   projects: Project[];
   tasks: Task[];
+  notes: Note[];
   friends: Friend[];
 }
 
 export const repo = {
   async fetchAll(uid: string): Promise<Snapshot> {
-    const [personalProjects, personalTasks, friends, sharedProjectIds] =
+    const [personalProjects, personalTasks, notes, friends, sharedProjectIds] =
       await Promise.all([
         getSnapshot(`${userProjects(uid)}`, dbToProject),
         getSnapshot(`${userTasks(uid)}`, dbToTask),
+        getSnapshot(`${userNotes(uid)}`, dbToNote),
         getSnapshot(`${userFriends(uid)}`, dbToFriend),
         getSharedProjectIds(uid),
       ]);
@@ -204,6 +232,7 @@ export const repo = {
     return {
       projects: allProjects,
       tasks: allTasks,
+      notes,
       friends,
     };
   },
@@ -280,6 +309,14 @@ export const repo = {
       }
     }
     await update(ref(db), updates);
+  },
+
+  async upsertNote(n: Note, ownerId: string) {
+    await set(ref(db, `${userNotes(ownerId)}/${n.id}`), noteToDB(n));
+  },
+
+  async deleteNote(id: string, ownerId: string) {
+    await remove(ref(db, `${userNotes(ownerId)}/${id}`));
   },
 
   async upsertFriend(f: Friend, ownerId: string) {

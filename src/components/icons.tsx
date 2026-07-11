@@ -19,7 +19,10 @@ export type IconName =
   | "repeat"
   | "collapse"
   | "note"
-  | "pin";
+  | "pin"
+  | "close"
+  | "link"
+  | "check";
 
 const PATHS: Record<IconName, ReactElement> = {
   inbox: (
@@ -138,6 +141,19 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M5 17h14l-1.5-2V9l2-2-2-2H7.5l-2 2 2 2v6z" />
     </>
   ),
+  close: (
+    <>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  check: <polyline points="20 6 9 17 4 12" />,
 };
 
 export function Icon({

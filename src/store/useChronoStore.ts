@@ -86,6 +86,7 @@ interface ChronoState {
   setProjectView: (projectId: string, view: ProjectView) => void;
   setKanbanColumn: (projectId: string, priority: Priority, label: string, color: string) => void;
   resetKanbanColumns: (projectId: string) => void;
+  setProjectColor: (projectId: string, color: string) => void;
   addCollaborator: (projectId: string, name: string, role?: Role) => void;
   setCollaboratorRole: (projectId: string, collaboratorId: string, role: Role) => void;
   removeCollaborator: (projectId: string, collaboratorId: string) => void;
@@ -158,11 +159,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     } catch {}
   };
 
-  const cache = () => {
-    if (!ownerId) return;
-    const { tasks, projects, friends } = get();
-    writeCache(ownerId, { tasks, projects, friends });
-  };
+    const cache = () => {
+      if (!ownerId) return;
+      const { tasks, projects, friends } = get();
+      writeCache(ownerId, { tasks, projects, notes: [], friends });
+    };
 
   const saveProject = (p: Project) => {
     if (!ownerId) return;
@@ -540,6 +541,11 @@ export const useChronoStore = create<ChronoState>((set, get) => {
         ...p,
         kanbanColumns: DEFAULT_KANBAN_COLUMNS.map((c) => ({ ...c })),
       }));
+    },
+
+    setProjectColor: (projectId, color) => {
+      const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : "#a78bfa";
+      patchProject(projectId, (p) => ({ ...p, color: safeColor }));
     },
 
     addCollaborator: (projectId, name, role = "editor") => {

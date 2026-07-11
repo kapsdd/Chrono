@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="chrono_bg_from">#FF0b0716</color>
+    <color name="chrono_bg_to">#FF140d28</color>
+    <color name="chrono_neon">#FF8b5cf6</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>

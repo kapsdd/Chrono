@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#0b0716"
+        android:pathData="M54,54m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0" />
+
+    <!-- Outer ring -->
+    <path
+        android:strokeColor="#8b5cf6"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0" />
+
+    <!-- Inner ring -->
+    <path
+        android:strokeColor="#8b5cf6"
+        android:strokeWidth="1.2"
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0"
+        android:strokeAlpha="0.4" />
+
+    <!-- C letter -->
+    <path
+        android:fillColor="#c4b5fd"
+        android:pathData="M62,34C56.5,30 49,30 44,34C39,38 36,44 36,51C36,58 39,64 44,68C49,72 56.5,72 62,68L60,64C56,67 50.5,68 47,65C43.5,62 41.5,57 41.5,51C41.5,45 43.5,40 47,37C50.5,34 56,35 60,38Z" />
+
+    <!-- Clock hand -->
+    <path
+        android:strokeColor="#d946ef"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,54L54,40" />
+
+    <!-- Clock hand short -->
+    <path
+        android:strokeColor="#d946ef"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,54L64,54" />
+
+    <!-- Center dot -->
+    <path
+        android:fillColor="#d946ef"
+        android:pathData="M54,54m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+</vector>

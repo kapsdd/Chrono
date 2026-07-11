@@ -23,6 +23,7 @@ import { HabitsView } from "@/components/HabitsView";
 import { NotesView } from "@/components/NotesView";
 import { Reminders } from "@/components/Reminders";
 import { CommandPalette } from "@/components/CommandPalette";
+import { UpdateBanner } from "@/components/UpdateBanner";
 import { buildTree } from "@/lib/tree";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
@@ -274,6 +275,7 @@ export default function Home() {
 
       {showAuth && <AuthScreen />}
       {showIntro && <Intro onDone={() => setIntroDone(true)} />}
+      {showApp && <UpdateBanner />}
     </AppShell>
   );
 }

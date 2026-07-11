@@ -1,0 +1,652 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.chrono.app"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="36" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:4:5-67
+11-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+12-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:5:5-77
+12-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:5:22-74
+13    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+13-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:6:5-81
+13-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:6:22-78
+14    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+14-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:26:5-79
+14-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:26:22-76
+15    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+15-->[com.google.android.recaptcha:recaptcha:18.4.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\66587ca46bda0c92e8a1d3d6a6ade531\transformed\recaptcha-18.4.0\AndroidManifest.xml:9:5-98
+15-->[com.google.android.recaptcha:recaptcha:18.4.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\66587ca46bda0c92e8a1d3d6a6ade531\transformed\recaptcha-18.4.0\AndroidManifest.xml:9:22-95
+16    <uses-permission android:name="android.permission.WAKE_LOCK" />
+16-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:23:5-68
+16-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:23:22-65
+17    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+17-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:26:5-77
+17-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:26:22-74
+18
+19    <permission
+19-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+20        android:name="com.chrono.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+20-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+21        android:protectionLevel="signature" />
+21-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+22
+23    <uses-permission android:name="com.chrono.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+23-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+23-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+24
+25    <application
+25-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:8:5-98:19
+26        android:name="com.chrono.app.ChronoApp"
+26-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:9:9-34
+27        android:allowBackup="true"
+27-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:10:9-35
+28        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+28-->[androidx.core:core:1.15.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\64330f763aa602cac1b62304e69955ab\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+29        android:extractNativeLibs="false"
+30        android:icon="@mipmap/ic_launcher"
+30-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:11:9-43
+31        android:label="Chrono"
+31-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:12:9-31
+32        android:supportsRtl="true"
+32-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:13:9-35
+33        android:theme="@style/Theme.Chrono" >
+33-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:14:9-44
+34        <activity
+34-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:16:9-25:20
+35            android:name="com.chrono.app.MainActivity"
+35-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:17:13-41
+36            android:exported="true"
+36-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:18:13-36
+37            android:theme="@style/Theme.Chrono"
+37-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:20:13-48
+38            android:windowSoftInputMode="adjustResize" >
+38-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:19:13-55
+39            <intent-filter>
+39-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:21:13-24:29
+40                <action android:name="android.intent.action.MAIN" />
+40-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:22:17-69
+40-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:22:25-66
+41
+42                <category android:name="android.intent.category.LAUNCHER" />
+42-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:23:17-77
+42-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:23:27-74
+43            </intent-filter>
+44        </activity>
+45
+46        <!-- Tasks Widget -->
+47        <receiver
+47-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:28:9-37:20
+48            android:name="com.chrono.app.widget.TasksWidgetProvider"
+48-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:29:13-55
+49            android:exported="true" >
+49-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:30:13-36
+50            <intent-filter>
+50-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:31:13-33:29
+51                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+51-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:17-84
+51-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:25-81
+52            </intent-filter>
+53
+54            <meta-data
+54-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:34:13-36:61
+55                android:name="android.appwidget.provider"
+55-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:35:17-58
+56                android:resource="@xml/tasks_widget_info" />
+56-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:36:17-58
+57        </receiver>
+58
+59        <service
+59-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:38:9-41:72
+60            android:name="com.chrono.app.widget.TasksWidgetService"
+60-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:39:13-54
+61            android:exported="false"
+61-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:40:13-37
+62            android:permission="android.permission.BIND_REMOTEVIEWS" />
+62-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:41:13-69
+63
+64        <!-- Habits Widget -->
+65        <receiver
+65-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:44:9-53:20
+66            android:name="com.chrono.app.widget.HabitsWidgetProvider"
+66-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:45:13-56
+67            android:exported="true" >
+67-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:46:13-36
+68            <intent-filter>
+68-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:31:13-33:29
+69                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+69-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:17-84
+69-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:25-81
+70            </intent-filter>
+71
+72            <meta-data
+72-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:34:13-36:61
+73                android:name="android.appwidget.provider"
+73-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:35:17-58
+74                android:resource="@xml/habits_widget_info" />
+74-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:36:17-58
+75        </receiver>
+76
+77        <service
+77-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:54:9-57:72
+78            android:name="com.chrono.app.widget.HabitsWidgetService"
+78-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:55:13-55
+79            android:exported="false"
+79-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:56:13-37
+80            android:permission="android.permission.BIND_REMOTEVIEWS" />
+80-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:57:13-69
+81
+82        <!-- Notes Widget -->
+83        <receiver
+83-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:60:9-69:20
+84            android:name="com.chrono.app.widget.NotesWidgetProvider"
+84-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:61:13-55
+85            android:exported="true" >
+85-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:62:13-36
+86            <intent-filter>
+86-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:31:13-33:29
+87                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+87-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:17-84
+87-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:32:25-81
+88            </intent-filter>
+89
+90            <meta-data
+90-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:34:13-36:61
+91                android:name="android.appwidget.provider"
+91-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:35:17-58
+92                android:resource="@xml/notes_widget_info" />
+92-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:36:17-58
+93        </receiver>
+94
+95        <service
+95-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:70:9-73:72
+96            android:name="com.chrono.app.widget.NotesWidgetService"
+96-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:71:13-54
+97            android:exported="false"
+97-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:72:13-37
+98            android:permission="android.permission.BIND_REMOTEVIEWS" />
+98-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:73:13-69
+99
+100        <!-- Widget Actions -->
+101        <receiver
+101-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:76:9-78:40
+102            android:name="com.chrono.app.widget.WidgetActionReceiver"
+102-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:77:13-56
+103            android:exported="false" />
+103-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:78:13-37
+104
+105        <!-- Widget Config -->
+106        <activity
+106-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:81:9-88:20
+107            android:name="com.chrono.app.widget.WidgetConfigActivity"
+107-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:82:13-56
+108            android:exported="true"
+108-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:83:13-36
+109            android:theme="@style/Theme.Chrono" >
+109-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:84:13-48
+110            <intent-filter>
+110-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:85:13-87:29
+111                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+111-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:86:17-87
+111-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:86:25-84
+112            </intent-filter>
+113        </activity>
+114
+115        <!-- Boot Receiver -->
+116        <receiver
+116-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:91:9-97:20
+117            android:name="com.chrono.app.widget.BootReceiver"
+117-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:92:13-48
+118            android:exported="true" >
+118-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:93:13-36
+119            <intent-filter>
+119-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:94:13-96:29
+120                <action android:name="android.intent.action.BOOT_COMPLETED" />
+120-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:95:17-79
+120-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:95:25-76
+121            </intent-filter>
+122        </receiver>
+123
+124        <activity
+124-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:23:9-27:75
+125            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+125-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:24:13-93
+126            android:excludeFromRecents="true"
+126-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:25:13-46
+127            android:exported="false"
+127-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:26:13-37
+128            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+128-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:27:13-72
+129        <!--
+130            Service handling Google Sign-In user revocation. For apps that do not integrate with
+131            Google Sign-In, this service will never be started.
+132        -->
+133        <service
+133-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:33:9-37:51
+134            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+134-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:34:13-89
+135            android:exported="true"
+135-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:35:13-36
+136            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+136-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:36:13-107
+137            android:visibleToInstantApps="true" />
+137-->[com.google.android.gms:play-services-auth:21.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff50a4f82a08949229f3897708acfcac\transformed\play-services-auth-21.3.0\AndroidManifest.xml:37:13-48
+138        <service
+138-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:8:9-14:19
+139            android:name="com.google.firebase.components.ComponentDiscoveryService"
+139-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:9:13-84
+140            android:directBootAware="true"
+140-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:32:13-43
+141            android:exported="false" >
+141-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:10:13-37
+142            <meta-data
+142-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:11:13-13:85
+143                android:name="com.google.firebase.components:com.google.firebase.auth.ktx.FirebaseAuthLegacyRegistrar"
+143-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:12:17-119
+144                android:value="com.google.firebase.components.ComponentRegistrar" />
+144-->[com.google.firebase:firebase-auth-ktx:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\3d4fc738993b08d011f80a4b4f0f8955\transformed\firebase-auth-ktx-22.3.1\AndroidManifest.xml:13:17-82
+145            <meta-data
+145-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:69:13-71:85
+146                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+146-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:70:17-109
+147                android:value="com.google.firebase.components.ComponentRegistrar" />
+147-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:71:17-82
+148            <meta-data
+148-->[com.google.firebase:firebase-database-ktx:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\96f14c14bcf1f7e6b35ccc9438a52c54\transformed\firebase-database-ktx-20.3.1\AndroidManifest.xml:12:13-14:85
+149                android:name="com.google.firebase.components:com.google.firebase.database.ktx.FirebaseDatabaseLegacyRegistrar"
+149-->[com.google.firebase:firebase-database-ktx:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\96f14c14bcf1f7e6b35ccc9438a52c54\transformed\firebase-database-ktx-20.3.1\AndroidManifest.xml:13:17-127
+150                android:value="com.google.firebase.components.ComponentRegistrar" />
+150-->[com.google.firebase:firebase-database-ktx:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\96f14c14bcf1f7e6b35ccc9438a52c54\transformed\firebase-database-ktx-20.3.1\AndroidManifest.xml:14:17-82
+151            <meta-data
+151-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:29:13-31:85
+152                android:name="com.google.firebase.components:com.google.firebase.database.FirebaseDatabaseKtxRegistrar"
+152-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:30:17-120
+153                android:value="com.google.firebase.components.ComponentRegistrar" />
+153-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:31:17-82
+154            <meta-data
+154-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:32:13-34:85
+155                android:name="com.google.firebase.components:com.google.firebase.database.DatabaseRegistrar"
+155-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:33:17-109
+156                android:value="com.google.firebase.components.ComponentRegistrar" />
+156-->[com.google.firebase:firebase-database:20.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e963b2093c9b86e0ca43b1829eef9b57\transformed\firebase-database-20.3.1\AndroidManifest.xml:34:17-82
+157            <meta-data
+157-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\65192df6518321e5640d93e935c926f4\transformed\firebase-common-ktx-20.4.2\AndroidManifest.xml:12:13-14:85
+158                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+158-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\65192df6518321e5640d93e935c926f4\transformed\firebase-common-ktx-20.4.2\AndroidManifest.xml:13:17-116
+159                android:value="com.google.firebase.components.ComponentRegistrar" />
+159-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\65192df6518321e5640d93e935c926f4\transformed\firebase-common-ktx-20.4.2\AndroidManifest.xml:14:17-82
+160            <meta-data
+160-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:35:13-37:85
+161                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+161-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:36:17-109
+162                android:value="com.google.firebase.components.ComponentRegistrar" />
+162-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:37:17-82
+163        </service>
+164
+165        <activity
+165-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:29:9-46:20
+166            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+166-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:30:13-80
+167            android:excludeFromRecents="true"
+167-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:31:13-46
+168            android:exported="true"
+168-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:32:13-36
+169            android:launchMode="singleTask"
+169-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:33:13-44
+170            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+170-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:34:13-72
+171            <intent-filter>
+171-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:35:13-45:29
+172                <action android:name="android.intent.action.VIEW" />
+172-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:36:17-69
+172-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:36:25-66
+173
+174                <category android:name="android.intent.category.DEFAULT" />
+174-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:38:17-76
+174-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:38:27-73
+175                <category android:name="android.intent.category.BROWSABLE" />
+175-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:39:17-78
+175-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:39:27-75
+176
+177                <data
+177-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:41:17-44:51
+178                    android:host="firebase.auth"
+178-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:42:21-49
+179                    android:path="/"
+179-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:43:21-37
+180                    android:scheme="genericidp" />
+180-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:44:21-48
+181            </intent-filter>
+182        </activity>
+183        <activity
+183-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:47:9-64:20
+184            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+184-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:48:13-79
+185            android:excludeFromRecents="true"
+185-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:49:13-46
+186            android:exported="true"
+186-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:50:13-36
+187            android:launchMode="singleTask"
+187-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:51:13-44
+188            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+188-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:52:13-72
+189            <intent-filter>
+189-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:53:13-63:29
+190                <action android:name="android.intent.action.VIEW" />
+190-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:36:17-69
+190-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:36:25-66
+191
+192                <category android:name="android.intent.category.DEFAULT" />
+192-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:38:17-76
+192-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:38:27-73
+193                <category android:name="android.intent.category.BROWSABLE" />
+193-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:39:17-78
+193-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:39:27-75
+194
+195                <data
+195-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:41:17-44:51
+196                    android:host="firebase.auth"
+196-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:42:21-49
+197                    android:path="/"
+197-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:43:21-37
+198                    android:scheme="recaptcha" />
+198-->[com.google.firebase:firebase-auth:22.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\e1fe8a7cad1fab6e7083b7cd407a13d2\transformed\firebase-auth-22.3.1\AndroidManifest.xml:44:21-48
+199            </intent-filter>
+200        </activity>
+201        <activity
+201-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\b0a33b005fdad3eeaf8535be743e4193\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+202            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+202-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\b0a33b005fdad3eeaf8535be743e4193\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+203            android:exported="false"
+203-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\b0a33b005fdad3eeaf8535be743e4193\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+204            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+204-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\b0a33b005fdad3eeaf8535be743e4193\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+205
+206        <provider
+206-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:23:9-28:39
+207            android:name="com.google.firebase.provider.FirebaseInitProvider"
+207-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:24:13-77
+208            android:authorities="com.chrono.app.firebaseinitprovider"
+208-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:25:13-72
+209            android:directBootAware="true"
+209-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:26:13-43
+210            android:exported="false"
+210-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:27:13-37
+211            android:initOrder="100" />
+211-->[com.google.firebase:firebase-common:20.4.2] C:\Users\Aers\.gradle\caches\8.11.1\transforms\cc286fa5b5c3b58c432bb0208dcb0c76\transformed\firebase-common-20.4.2\AndroidManifest.xml:28:13-36
+212        <provider
+212-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:29:9-37:20
+213            android:name="androidx.startup.InitializationProvider"
+213-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:30:13-67
+214            android:authorities="com.chrono.app.androidx-startup"
+214-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:31:13-68
+215            android:exported="false" >
+215-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:32:13-37
+216            <meta-data
+216-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:34:13-36:52
+217                android:name="androidx.work.WorkManagerInitializer"
+217-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:35:17-68
+218                android:value="androidx.startup" />
+218-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:36:17-49
+219            <meta-data
+219-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff1298d22fa3fe5e1fa4acc58e409bf0\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+220                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+220-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff1298d22fa3fe5e1fa4acc58e409bf0\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+221                android:value="androidx.startup" />
+221-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff1298d22fa3fe5e1fa4acc58e409bf0\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+222            <meta-data
+222-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Aers\.gradle\caches\8.11.1\transforms\2eb13bf1742194c428adc55889ee40fa\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+223                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+223-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Aers\.gradle\caches\8.11.1\transforms\2eb13bf1742194c428adc55889ee40fa\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+224                android:value="androidx.startup" />
+224-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Aers\.gradle\caches\8.11.1\transforms\2eb13bf1742194c428adc55889ee40fa\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+225            <meta-data
+225-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+226                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+226-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+227                android:value="androidx.startup" />
+227-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+228        </provider>
+229
+230        <service
+230-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:39:9-45:35
+231            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+231-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:40:13-88
+232            android:directBootAware="false"
+232-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:41:13-44
+233            android:enabled="@bool/enable_system_alarm_service_default"
+233-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:42:13-72
+234            android:exported="false" />
+234-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:43:13-37
+235        <service
+235-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:46:9-52:35
+236            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+236-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:47:13-84
+237            android:directBootAware="false"
+237-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:48:13-44
+238            android:enabled="@bool/enable_system_job_service_default"
+238-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:49:13-70
+239            android:exported="true"
+239-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:50:13-36
+240            android:permission="android.permission.BIND_JOB_SERVICE" />
+240-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:51:13-69
+241        <service
+241-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:53:9-59:35
+242            android:name="androidx.work.impl.foreground.SystemForegroundService"
+242-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:54:13-81
+243            android:directBootAware="false"
+243-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:55:13-44
+244            android:enabled="@bool/enable_system_foreground_service_default"
+244-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:56:13-77
+245            android:exported="false" />
+245-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:57:13-37
+246
+247        <receiver
+247-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:61:9-66:35
+248            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+248-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:62:13-88
+249            android:directBootAware="false"
+249-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:63:13-44
+250            android:enabled="true"
+250-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:64:13-35
+251            android:exported="false" />
+251-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:65:13-37
+252        <receiver
+252-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:67:9-77:20
+253            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+253-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:68:13-106
+254            android:directBootAware="false"
+254-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:69:13-44
+255            android:enabled="false"
+255-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:70:13-36
+256            android:exported="false" >
+256-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:71:13-37
+257            <intent-filter>
+257-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:73:13-76:29
+258                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+258-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:74:17-87
+258-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:74:25-84
+259                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+259-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:75:17-90
+259-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:75:25-87
+260            </intent-filter>
+261        </receiver>
+262        <receiver
+262-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:78:9-88:20
+263            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+263-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:79:13-104
+264            android:directBootAware="false"
+264-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:80:13-44
+265            android:enabled="false"
+265-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:81:13-36
+266            android:exported="false" >
+266-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:82:13-37
+267            <intent-filter>
+267-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:84:13-87:29
+268                <action android:name="android.intent.action.BATTERY_OKAY" />
+268-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:85:17-77
+268-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:85:25-74
+269                <action android:name="android.intent.action.BATTERY_LOW" />
+269-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:86:17-76
+269-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:86:25-73
+270            </intent-filter>
+271        </receiver>
+272        <receiver
+272-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:89:9-99:20
+273            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+273-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:90:13-104
+274            android:directBootAware="false"
+274-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:91:13-44
+275            android:enabled="false"
+275-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:92:13-36
+276            android:exported="false" >
+276-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:93:13-37
+277            <intent-filter>
+277-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:95:13-98:29
+278                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+278-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:96:17-83
+278-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:96:25-80
+279                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+279-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:97:17-82
+279-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:97:25-79
+280            </intent-filter>
+281        </receiver>
+282        <receiver
+282-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:100:9-109:20
+283            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+283-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:101:13-103
+284            android:directBootAware="false"
+284-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:102:13-44
+285            android:enabled="false"
+285-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:103:13-36
+286            android:exported="false" >
+286-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:104:13-37
+287            <intent-filter>
+287-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:106:13-108:29
+288                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+288-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:107:17-79
+288-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:107:25-76
+289            </intent-filter>
+290        </receiver>
+291        <receiver
+291-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:110:9-121:20
+292            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+292-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:111:13-88
+293            android:directBootAware="false"
+293-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:112:13-44
+294            android:enabled="false"
+294-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:113:13-36
+295            android:exported="false" >
+295-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:114:13-37
+296            <intent-filter>
+296-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:116:13-120:29
+297                <action android:name="android.intent.action.BOOT_COMPLETED" />
+297-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:95:17-79
+297-->C:\Users\Aers\Desktop\Chrono-main1\AndroidApp\app\src\main\AndroidManifest.xml:95:25-76
+298                <action android:name="android.intent.action.TIME_SET" />
+298-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:118:17-73
+298-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:118:25-70
+299                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+299-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:119:17-81
+299-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:119:25-78
+300            </intent-filter>
+301        </receiver>
+302        <receiver
+302-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:122:9-131:20
+303            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+303-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:123:13-99
+304            android:directBootAware="false"
+304-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:124:13-44
+305            android:enabled="@bool/enable_system_alarm_service_default"
+305-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:125:13-72
+306            android:exported="false" >
+306-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:126:13-37
+307            <intent-filter>
+307-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:128:13-130:29
+308                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+308-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:129:17-98
+308-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:129:25-95
+309            </intent-filter>
+310        </receiver>
+311        <receiver
+311-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:132:9-142:20
+312            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+312-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:133:13-78
+313            android:directBootAware="false"
+313-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:134:13-44
+314            android:enabled="true"
+314-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:135:13-35
+315            android:exported="true"
+315-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:136:13-36
+316            android:permission="android.permission.DUMP" >
+316-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:137:13-57
+317            <intent-filter>
+317-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:139:13-141:29
+318                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+318-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:140:17-88
+318-->[androidx.work:work-runtime:2.10.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\25faf8d132f2ab2a26fdc7e8f521851a\transformed\work-runtime-2.10.0\AndroidManifest.xml:140:25-85
+319            </intent-filter>
+320        </receiver>
+321
+322        <service
+322-->[androidx.room:room-runtime:2.6.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\f0ca20f5a1d50f6ddc7b3902cc7cef93\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+323            android:name="androidx.room.MultiInstanceInvalidationService"
+323-->[androidx.room:room-runtime:2.6.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\f0ca20f5a1d50f6ddc7b3902cc7cef93\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+324            android:directBootAware="true"
+324-->[androidx.room:room-runtime:2.6.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\f0ca20f5a1d50f6ddc7b3902cc7cef93\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+325            android:exported="false" />
+325-->[androidx.room:room-runtime:2.6.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\f0ca20f5a1d50f6ddc7b3902cc7cef93\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+326
+327        <meta-data
+327-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff9092962007b7946509abfc68811d8d\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+328            android:name="com.google.android.gms.version"
+328-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff9092962007b7946509abfc68811d8d\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+329            android:value="@integer/google_play_services_version" />
+329-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Aers\.gradle\caches\8.11.1\transforms\ff9092962007b7946509abfc68811d8d\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+330
+331        <receiver
+331-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+332            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+332-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+333            android:directBootAware="false"
+333-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+334            android:enabled="true"
+334-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+335            android:exported="true"
+335-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+336            android:permission="android.permission.DUMP" >
+336-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+337            <intent-filter>
+337-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+338                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+338-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+338-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+339            </intent-filter>
+340            <intent-filter>
+340-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+341                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+341-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+341-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+342            </intent-filter>
+343            <intent-filter>
+343-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+344                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+344-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+344-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+345            </intent-filter>
+346            <intent-filter>
+346-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+347                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+347-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+347-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Aers\.gradle\caches\8.11.1\transforms\1e8de938c5d8304bc1e28992d2832bf1\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+348            </intent-filter>
+349        </receiver>
+350    </application>
+351
+352</manifest>

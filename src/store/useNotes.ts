@@ -2,16 +2,9 @@
 
 import { create } from "zustand";
 import type { Note } from "@/lib/types";
-
-// Notes live in localStorage (per-user). Cloud sync can be added later by
-// adding a Supabase table — the store is shaped so the only change needed
-// would be swapping save()/load() for a repo call.
-
-const STORAGE_PREFIX = "chrono.notes:";
-
-function ownerKey(ownerId: string | null) {
-  return `${STORAGE_PREFIX}${ownerId ?? "guest"}`;
-}
+import { repo } from "@/lib/repo";
+import { auth, db } from "@/lib/firebase";
+import { ref, onValue, off } from "firebase/database";
 
 const uid = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -19,27 +12,6 @@ const uid = (): string =>
     : `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 
 const nowIso = () => new Date().toISOString();
-
-function load(ownerId: string | null): Note[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(ownerKey(ownerId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Note[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function save(ownerId: string | null, notes: Note[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(ownerKey(ownerId), JSON.stringify(notes));
-  } catch {
-    /* quota / private mode */
-  }
-}
 
 interface NotesState {
   notes: Note[];
@@ -55,6 +27,8 @@ interface NotesState {
   togglePinned: (id: string) => void;
 }
 
+let unsubscribe: (() => void) | null = null;
+
 export const useNotes = create<NotesState>((set, get) => ({
   notes: [],
   activeId: null,
@@ -62,26 +36,60 @@ export const useNotes = create<NotesState>((set, get) => ({
   hydrated: false,
 
   hydrate: (ownerId) => {
-    const notes = load(ownerId);
-    const sorted = [...notes].sort((a, b) =>
-      a.pinned === b.pinned
-        ? (a.updatedAt < b.updatedAt ? 1 : -1)
-        : a.pinned
-          ? -1
-          : 1,
-    );
-    const prev = get().activeId;
-    set({
-      notes: sorted,
-      ownerId,
-      hydrated: true,
-      activeId: sorted.find((n) => n.id === prev)?.id ?? sorted[0]?.id ?? null,
+    // Clean up previous listener
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
+    if (!ownerId) {
+      set({ notes: [], ownerId: null, hydrated: true, activeId: null });
+      return;
+    }
+
+    // Set up realtime listener
+    const notesRef = ref(db, `users/${ownerId}/notes`);
+    const handler = onValue(notesRef, (snap) => {
+      const raw = snap.val();
+      const notes: Note[] = raw
+        ? Object.values(raw as Record<string, Record<string, unknown>>).map((r) => ({
+            id: r.id as string,
+            title: (r.title as string) ?? "",
+            content: (r.content as string) ?? "",
+            pinned: (r.pinned as boolean) ?? false,
+            color: (r.color as string) ?? undefined,
+            createdAt: (r.created_at as string) ?? new Date().toISOString(),
+            updatedAt: (r.updated_at as string) ?? new Date().toISOString(),
+          }))
+        : [];
+
+      const sorted = [...notes].sort((a, b) =>
+        a.pinned === b.pinned
+          ? (a.updatedAt < b.updatedAt ? 1 : -1)
+          : a.pinned
+            ? -1
+            : 1,
+      );
+
+      const prev = get().activeId;
+      set({
+        notes: sorted,
+        ownerId,
+        hydrated: true,
+        activeId: sorted.find((n) => n.id === prev)?.id ?? sorted[0]?.id ?? null,
+      });
     });
+
+    unsubscribe = () => off(notesRef, "value", handler);
+    set({ ownerId, hydrated: false });
   },
 
   setActive: (id) => set({ activeId: id }),
 
   create: (preset) => {
+    const ownerId = get().ownerId;
+    if (!ownerId) return { id: "", title: "", content: "", createdAt: "", updatedAt: "" };
+
     const note: Note = {
       id: uid(),
       title: preset?.title ?? "Без названия",
@@ -91,39 +99,36 @@ export const useNotes = create<NotesState>((set, get) => ({
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
-    const notes = [note, ...get().notes];
-    set({ notes, activeId: note.id });
-    save(get().ownerId, notes);
+    void repo.upsertNote(note, ownerId);
+    set({ activeId: note.id });
     return note;
   },
 
   update: (id, patch) => {
-    const notes = get().notes.map((n) =>
-      n.id === id ? { ...n, ...patch, updatedAt: nowIso() } : n,
-    );
-    set({ notes });
-    save(get().ownerId, notes);
+    const ownerId = get().ownerId;
+    if (!ownerId) return;
+    const existing = get().notes.find((n) => n.id === id);
+    if (!existing) return;
+    const updated = { ...existing, ...patch, updatedAt: nowIso() };
+    void repo.upsertNote(updated, ownerId);
   },
 
   remove: (id) => {
-    const notes = get().notes.filter((n) => n.id !== id);
-    const activeId =
-      get().activeId === id ? notes[0]?.id ?? null : get().activeId;
-    set({ notes, activeId });
-    save(get().ownerId, notes);
+    const ownerId = get().ownerId;
+    if (!ownerId) return;
+    void repo.deleteNote(id, ownerId);
+    if (get().activeId === id) {
+      const remaining = get().notes.filter((n) => n.id !== id);
+      set({ activeId: remaining[0]?.id ?? null });
+    }
   },
 
   togglePinned: (id) => {
-    const notes = get().notes
-      .map((n) => (n.id === id ? { ...n, pinned: !n.pinned, updatedAt: nowIso() } : n))
-      .sort((a, b) =>
-        a.pinned === b.pinned
-          ? (a.updatedAt < b.updatedAt ? 1 : -1)
-          : a.pinned
-            ? -1
-            : 1,
-      );
-    set({ notes });
-    save(get().ownerId, notes);
+    const ownerId = get().ownerId;
+    if (!ownerId) return;
+    const existing = get().notes.find((n) => n.id === id);
+    if (!existing) return;
+    const updated = { ...existing, pinned: !existing.pinned, updatedAt: nowIso() };
+    void repo.upsertNote(updated, ownerId);
   },
 }));

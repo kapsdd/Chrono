@@ -87,14 +87,15 @@ function sha256Base64Url(str) {
 
 function exchangeCodeForTokens(code, codeVerifier) {
   return new Promise((resolve, reject) => {
-    const body = new URLSearchParams({
+    const params = {
       code,
       client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
       redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
       code_verifier: codeVerifier,
-    });
+    };
+    if (GOOGLE_CLIENT_SECRET) params.client_secret = GOOGLE_CLIENT_SECRET;
+    const body = new URLSearchParams(params);
 
     const req = https.request("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -117,9 +118,6 @@ function exchangeCodeForTokens(code, codeVerifier) {
 }
 
 function captureGoogleAuth() {
-  if (!GOOGLE_CLIENT_SECRET) {
-    return Promise.resolve({ idToken: null, error: "Google OAuth not configured. Set GOOGLE_CLIENT_SECRET in .env" });
-  }
   return new Promise((resolve) => {
     let settled = false;
     const done = (v) => {

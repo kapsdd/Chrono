@@ -1,0 +1,13 @@
+Source: chronotasks
+Section: utils
+Priority: optional
+Maintainer: kapsdd <kapsdd@github.com>
+Build-Depends: debhelper (>= 10), wget, dpkg-dev
+Standards-Version: 4.1.2
+
+Package: chronotasks
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
+Description: CHRONO - Premium task manager
+ CHRONO is a dark-green glassmorphism task manager with
+ kanban boards, timers, notes, habits, and calendar features.

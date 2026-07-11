@@ -1,0 +1,16 @@
+Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at rD (4bd1b696-c023c6e3521b1417.js:1:35056)
+    at oq (4bd1b696-c023c6e3521b1417.js:1:84560)
+    at ik (4bd1b696-c023c6e3521b1417.js:1:114676)
+    at 4bd1b696-c023c6e3521b1417.js:1:110724
+    at iu (4bd1b696-c023c6e3521b1417.js:1:110825)
+    at iX (4bd1b696-c023c6e3521b1417.js:1:132928)
+    at MessagePort.w (255-eb4aecc3ff015961.js:1:114944)
+119-a3dc96443b3d8f7f.js:1 [2026-06-21T23:12:01.997Z]  @firebase/database: FIREBASE WARNING: Database lives in a different region. Please change your database URL to https://chrono-a1f8d-default-rtdb.europe-west1.firebasedatabase.app (https://chrono-a1f8d-default-rtdb.firebaseio.com/) 
+l @ 119-a3dc96443b3d8f7f.js:1
+page-3b3536bcc60f0a13.js:1 [repo] publishProject start 6b0d5cd0-3f9c-45b6-8a3c-e994987e49a5 QKN-SRP
+page-3b3536bcc60f0a13.js:1 [repo] password hashed
+page-3b3536bcc60f0a13.js:1 [repo] publishProject start ec3d9f9a-de8e-475a-87e8-1f600b794d6b KMG-KW7
+page-3b3536bcc60f0a13.js:1 [repo] password hashed
+page-3b3536bcc60f0a13.js:1 [repo] publishProject start ec3d9f9a-de8e-475a-87e8-1f600b794d6b BEP-JKV
+page-3b3536bcc60f0a13.js:1 [repo] password hashed

@@ -504,3 +504,22 @@ input::placeholder {
 [data-theme="autumn"] .to-fuchsia-600 { --tw-gradient-to: #ca8a04 var(--tw-gradient-to-position); }
 [data-theme="autumn"] *::-webkit-scrollbar-thumb { background: rgba(194, 65, 12, 0.36); background-clip: padding-box; }
 [data-theme="autumn"] ::selection { background: rgba(234, 179, 8, 0.4); color: #1a0f03; }
+
+/* ---- Steel (neutral dark gray, no color tint) ---- */
+[data-theme="steel"] body {
+  background:
+    radial-gradient(1100px 760px at 18% 8%, rgba(107, 114, 128, 0.4), transparent 55%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(156, 163, 175, 0.3), transparent 55%),
+    linear-gradient(135deg, #111827 0%, #1f2937 45%, #374151 100%);
+}
+[data-theme="steel"] .app-window {
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(107, 114, 128, 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.985), rgba(10, 15, 25, 0.995));
+}
+[data-theme="steel"] .from-violet-500 { --tw-gradient-from: #6b7280 var(--tw-gradient-from-position); }
+[data-theme="steel"] .to-fuchsia-500 { --tw-gradient-to: #9ca3af var(--tw-gradient-to-position); }
+[data-theme="steel"] .from-violet-600 { --tw-gradient-from: #4b5563 var(--tw-gradient-from-position); }
+[data-theme="steel"] .to-fuchsia-600 { --tw-gradient-to: #6b7280 var(--tw-gradient-to-position); }
+[data-theme="steel"] *::-webkit-scrollbar-thumb { background: rgba(107, 114, 128, 0.34); background-clip: padding-box; }
+[data-theme="steel"] ::selection { background: rgba(156, 163, 175, 0.35); color: #fff; }

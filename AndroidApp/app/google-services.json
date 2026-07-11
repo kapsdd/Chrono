@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "514930791311",
+    "firebase_url": "https://chrono-a1f8d-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "chrono-a1f8d",
+    "storage_bucket": "chrono-a1f8d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:514930791311:android:b2094bc303087d74be71fa",
+        "android_client_info": {
+          "package_name": "com.chrono.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "514930791311-6nbu8kdgvo5dp5khdnhg0jr02m7hnvn5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chrono.app",
+            "certificate_hash": "3b329aa99b162a6a8584b9a7b7a517306e3c21d5"
+          }
+        },
+        {
+          "client_id": "514930791311-hnhbeqsh5no5krgq0qk6jtaatsvgtm15.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTONdvhHy6xM8QUbvr7fbOFWA8TPR7ozc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "514930791311-hnhbeqsh5no5krgq0qk6jtaatsvgtm15.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

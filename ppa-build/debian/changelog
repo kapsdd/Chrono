@@ -1,0 +1,11 @@
+chronotasks (3.3.2) resolute; urgency=medium
+
+  * Fix build: create install directory before copy
+
+ -- kapsdd <kapsdst@gmail.com>  Thu, 10 Jul 2026 21:45:00 +0000
+
+chronotasks (3.3.0) resolute; urgency=medium
+
+  * Initial release
+
+ -- kapsdd <kapsdst@gmail.com>  Thu, 10 Jul 2026 20:00:00 +0000
