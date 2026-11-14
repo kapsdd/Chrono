@@ -47,7 +47,12 @@ jobs:
         run: npm run build
 
       - name: Build Linux packages (Tauri)
+        # Bakes the Google OAuth client secret into the binary (src-tauri/build.rs)
+        # so sign-in works in the packaged build. GitHub masks secrets in logs.
         run: npx tauri build --bundles deb,appimage
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
       - name: Collect artifacts
         run: |
