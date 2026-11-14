@@ -129,3 +129,10 @@ src-tauri/target/
 src-tauri/gen/
 *.exe
 
+
+# ---------- Android signing / local machine config ----------
+*.jks
+*.keystore
+AndroidApp/local.properties
+*.apk
+

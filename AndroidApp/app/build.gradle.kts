@@ -1,9 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
 }
+
+// Signing credentials live outside the repository (gitignored local.properties,
+// or environment variables on CI). Never hardcode them here — this repo is
+// public and the previous keystore + password leaked through it.
+val signingProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingProp(name: String): String? =
+    signingProps.getProperty(name) ?: System.getenv(name.replace('.', '_').uppercase())
 
 android {
     namespace = "com.chrono.app"
@@ -21,9 +33,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("chrono-release.jks")
-            storePassword = "chrono123"
-            keyAlias = "chrono"
-            keyPassword = "chrono123"
+            storePassword = signingProp("chrono.signing.storePassword")
+            keyAlias = signingProp("chrono.signing.keyAlias") ?: "chrono"
+            keyPassword = signingProp("chrono.signing.keyPassword")
         }
     }
 
