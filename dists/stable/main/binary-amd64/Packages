@@ -1,20 +1,15 @@
 Package: chrono
-Version: 3.2.1
+Version: 4.0.0
 Architecture: amd64
-Maintainer: CHRONO <chrono@example.com>
-Installed-Size: 271269
-Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
-Recommends: libappindicator3-1
-Filename: pool/main/CHRONO-3.2.1-amd64.deb
-Size: 76756052
-MD5sum: 6e17bc373b369ca064f7b0faa0f0d059
-SHA1: 80a4df5612ecddd5b1c05e4d1aa01390d09fa5ae
-SHA256: 30586fd67ba0b19c19172d044e6e529b84828d95840d5da0df5f7e35d4ea38f2
-Section: Office
+Maintainer: CHRONO
+Installed-Size: 8605
+Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0, libwebkit2gtk-4.1-0, libgtk-3-0
+Filename: pool/main/CHRONO_4.0.0_amd64.deb
+Size: 4821516
+MD5sum: f3b158b06513e7418ef973d4e1022d50
+SHA1: 453f13f61d4c446ee14747db0b01e08a566f0032
+SHA256: 09de92ed398b4cc2fa689c7c0bf4ca906bdff0162a21f7ec7ab093efe0c4aacc
 Priority: optional
-Homepage: https://github.com/kapsdd/Chrono
-Description:
-  CHRONO — premium dark-green glassmorphism task manager
-License: unknown
-Vendor: CHRONO <chrono@example.com>
+Description: CHRONO — premium task manager
+ CHRONO — premium dark-green glassmorphism task manager
 
