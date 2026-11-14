@@ -59,21 +59,25 @@ export const useSession = create<SessionState>((set, get) => {
       set({ pending: true, error: null });
       try {
         if (isDesktop()) {
-          // Rust runs the system-browser loopback flow and hands back the ID
-          // token; Firebase is only asked to mint the session from it.
+          // The Rust shell opens the user's own browser, where their Google
+          // accounts already are, and hands back the ID token. The in-app
+          // popup would open a fresh profile with no sessions, which looks
+          // like phishing and forces a fresh sign-in.
           const res = await desktop.googleSignIn();
           if (!res.idToken) {
-            const detail = res.error ?? "нет токена";
-            set({ pending: false, error: `Не удалось войти: ${detail}` });
+            set({
+              pending: false,
+              error: `Не удалось войти: ${res.error ?? "нет токена"}`,
+            });
             return;
           }
           await signInWithCredential(
             auth,
             GoogleAuthProvider.credential(res.idToken),
           );
-        } else {
-          await signInWithPopup(auth, googleProvider);
+          return;
         }
+        await signInWithPopup(auth, googleProvider);
       } catch (e) {
         console.error("Login failed", e);
         if (get().session) return;

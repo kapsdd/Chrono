@@ -49,7 +49,10 @@ pub fn run() {
             .shadow(false)
             .resizable(true)
             .center()
-            .focused(true);
+            .focused(true)
+            // Firebase signs in through a popup; Tauri denies `window.open`
+            // unless a handler opts in.
+            .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Allow);
 
             #[cfg(not(target_os = "linux"))]
             {

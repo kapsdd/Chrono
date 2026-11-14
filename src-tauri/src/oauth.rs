@@ -33,9 +33,11 @@ fn client_id() -> String {
 }
 
 fn client_secret() -> Option<String> {
+    // Runtime .env wins (dev), otherwise the value baked in at build time.
     std::env::var("GOOGLE_CLIENT_SECRET")
         .ok()
         .filter(|s| !s.trim().is_empty())
+        .or_else(|| option_env!("GOOGLE_CLIENT_SECRET").map(str::to_string))
 }
 
 fn redirect_uri() -> String {
@@ -91,16 +93,21 @@ fn urlencode(value: &str) -> String {
 
 fn exchange_code_for_tokens(code: &str, code_verifier: &str) -> Result<serde_json::Value, String> {
     let cid = client_id();
-    let secret = client_secret().unwrap_or_default();
     let redir = redirect_uri();
-    let pairs: [(&str, &str); 6] = [
+    // Desktop clients using PKCE don't need the client secret — Google treats
+    // it as public information for installed apps. It is only sent when one is
+    // actually configured (e.g. via .env) so the packaged build works as-is.
+    let secret = client_secret();
+    let mut pairs: Vec<(&str, &str)> = vec![
         ("code", code),
         ("client_id", &cid),
-        ("client_secret", &secret),
         ("redirect_uri", &redir),
         ("grant_type", "authorization_code"),
         ("code_verifier", code_verifier),
     ];
+    if let Some(ref s) = secret {
+        pairs.push(("client_secret", s));
+    }
     let body = pairs
         .iter()
         .map(|(k, v)| format!("{k}={}", urlencode(v)))
@@ -142,15 +149,16 @@ fn respond(request: tiny_http::Request, page: &str) {
 /// Run the whole loopback flow, blocking until the browser round-trips or the
 /// timeout elapses.
 pub fn capture_google_auth() -> GoogleAuthResult {
-    let Some(_secret) = client_secret() else {
+    if client_secret().is_none() {
         return GoogleAuthResult {
             id_token: None,
             error: Some(
-                "Google OAuth requires configuration. Create .env file with GOOGLE_CLIENT_SECRET."
+                "Вход через Google не настроен: отсутствует GOOGLE_CLIENT_SECRET. \
+                 Соберите приложение с секретом в окружении (см. scripts/build-release.ps1)."
                     .into(),
             ),
         };
-    };
+    }
 
     let code_verifier = generate_code_verifier();
     let code_challenge = sha256_base64url(&code_verifier);
