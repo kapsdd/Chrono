@@ -14,8 +14,31 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            dpkg-dev
 
       - name: Install dependencies
         run: npm ci
@@ -23,10 +46,15 @@ jobs:
       - name: Build Next.js
         run: npm run build
 
-      - name: Build Linux packages
-        run: npx electron-builder --linux deb AppImage
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Linux packages (Tauri)
+        run: npx tauri build --bundles deb,appimage
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p release
+          cp src-tauri/target/release/bundle/deb/*.deb release/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/appimage/*.AppImage release/ 2>/dev/null || true
+          ls -la release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -59,8 +87,6 @@ jobs:
 
       - name: Create APT repository
         run: |
-          sudo apt-get update && sudo apt-get install -y dpkg-dev
-
           mkdir -p apt-repo/pool/main
           mkdir -p apt-repo/dists/stable/main/binary-amd64
           mkdir -p apt-repo/dists/stable/main/binary-arm64

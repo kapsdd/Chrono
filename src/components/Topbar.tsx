@@ -16,7 +16,10 @@ export function Topbar({ onOpenFriends }: { onOpenFriends: () => void }) {
   const toggleSidebar = useUI((s) => s.toggleSidebar);
 
   return (
-    <div className="drag-region flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] px-4">
+    <div
+      data-tauri-drag-region
+      className="drag-region flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] px-4"
+    >
       <IconButton name="collapse" label="Скрыть/показать панель" onClick={toggleSidebar} />
       <IconButton name="plus" label="Новая задача" onClick={focusSmartInput} />
 

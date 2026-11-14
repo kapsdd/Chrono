@@ -1,0 +1,15 @@
+[package]
+name = "chrono-core"
+version = "0.1.0"
+edition = "2021"
+description = "CHRONO core domain logic: smart input, task tree, kanban, iCal, crypto"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+sha2 = "0.10"
+
+[lib]
+name = "chrono_core"
+path = "src/lib.rs"

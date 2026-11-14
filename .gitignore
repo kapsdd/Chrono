@@ -123,3 +123,9 @@ CLAUDE.md.bak
 #   fix: bundled inside next, no standalone fix yet
 # tar@<=7.5.15 — 2 high: path traversal, symlink poisoning
 #   fix: npm audit fix --force → electron-builder@26.15.3 (breaking change)
+
+# ---------- Rust / Tauri ----------
+src-tauri/target/
+src-tauri/gen/
+*.exe
+

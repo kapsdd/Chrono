@@ -54,18 +54,3 @@ export function buildICS(tasks: Task[], stamp: Date): string {
   // RFC 5545 wants CRLF line endings.
   return lines.join("\r\n");
 }
-
-// Trigger a download of the current tasks as a .ics file.
-export function downloadICS(tasks: Task[]) {
-  if (typeof window === "undefined") return;
-  const ics = buildICS(tasks, new Date());
-  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "chrono.ics";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}

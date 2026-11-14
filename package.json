@@ -1,6 +1,6 @@
 {
   "name": "chrono",
-  "version": "3.2.1",
+  "version": "4.0.0",
   "private": true,
   "description": "CHRONO — premium dark-green glassmorphism task manager (Phase 1: web core)",
   "author": "CHRONO",
@@ -9,21 +9,19 @@
     "dev": "next dev",
     "build": "next build",
     "preview": "npx --yes serve out",
-    "electron": "electron .",
-    "app:dev": "next build && electron .",
-    "dist": "next build && electron-builder",
-    "dist:linux": "next build && electron-builder --linux",
-    "dist:linux:deb": "next build && electron-builder --linux deb",
-    "dist:linux:appimage": "next build && electron-builder --linux AppImage",
-    "dist:linux:rpm": "next build && electron-builder --linux rpm",
-    "dist:all": "next build && electron-builder --win --linux",
-    "package:win": "next build && electron-packager . CHRONO --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=false --ignore=\"/node_modules\" --ignore=\"/(src|prisma|shablon|knopki|release|\\.next|\\.claude)\" --ignore=\"\\.(ts|tsx|tsbuildinfo|log)$\"",
-    "postinstall": "electron-builder install-app-deps"
+    "tauri": "tauri",
+    "app:dev": "tauri dev",
+    "dist": "tauri build",
+    "dist:win": "tauri build --bundles nsis",
+    "dist:linux": "tauri build --bundles deb,appimage,rpm",
+    "test:core": "cargo test --manifest-path src-tauri/chrono-core/Cargo.toml",
+    "postinstall": "echo skipping electron-builder install-app-deps"
   },
   "dependencies": {
     "@fontsource/inter": "^5.1.1",
     "@fontsource/jetbrains-mono": "^5.1.1",
     "@supabase/supabase-js": "^2.108.2",
+    "@tauri-apps/api": "^2.12.4",
     "clsx": "^2.1.1",
     "firebase": "^12.15.0",
     "framer-motion": "^11.15.0",
@@ -35,6 +33,7 @@
   },
   "devDependencies": {
     "@electron/packager": "^20.0.1",
+    "@tauri-apps/cli": "^2.12.4",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
@@ -77,9 +76,25 @@
     },
     "linux": {
       "target": [
-        { "target": "deb", "arch": ["x64", "arm64"] },
-        { "target": "AppImage", "arch": ["x64"] },
-        { "target": "rpm", "arch": ["x64"] }
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "okno/icon.png",
       "category": "Office",
@@ -95,14 +110,34 @@
       "artifactName": "CHRONO-${version}-${arch}.${ext}"
     },
     "deb": {
-      "depends": ["libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libsecret-1-0"],
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ],
       "packageCategory": "Office",
       "priority": "optional",
       "maintainer": "CHRONO <chrono@example.com>",
       "afterInstall": "scripts/postinst.sh"
     },
     "rpm": {
-      "depends": ["gtk3", "libnotify", "nss", "libXScrnSaver", "libXtst", "xdg-utils", "at-spi2-core", "libuuid", "libsecret"]
+      "depends": [
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "libuuid",
+        "libsecret"
+      ]
     },
     "appImage": {}
   }

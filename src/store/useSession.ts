@@ -11,6 +11,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { desktop, isDesktop } from "@/lib/desktop";
 
 function toSession(user: User | null): Session | null {
   if (!user) return null;
@@ -57,7 +58,22 @@ export const useSession = create<SessionState>((set, get) => {
     loginWithDiscord: async () => {
       set({ pending: true, error: null });
       try {
-        await signInWithPopup(auth, googleProvider);
+        if (isDesktop()) {
+          // Rust runs the system-browser loopback flow and hands back the ID
+          // token; Firebase is only asked to mint the session from it.
+          const res = await desktop.googleSignIn();
+          if (!res.idToken) {
+            const detail = res.error ?? "нет токена";
+            set({ pending: false, error: `Не удалось войти: ${detail}` });
+            return;
+          }
+          await signInWithCredential(
+            auth,
+            GoogleAuthProvider.credential(res.idToken),
+          );
+        } else {
+          await signInWithPopup(auth, googleProvider);
+        }
       } catch (e) {
         console.error("Login failed", e);
         if (get().session) return;

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CHRONO",
+  "version": "4.0.0",
+  "identifier": "com.chrono.app",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "appimage", "rpm"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/256x256.png",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "CHRONO — premium task manager",
+    "longDescription": "CHRONO — premium dark-green glassmorphism task manager",
+    "copyright": "CHRONO",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["SimpChinese", "English", "Russian"],
+        "displayLanguageSelector": true
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libgtk-3-0",
+          "libnotify4",
+          "libnss3",
+          "libxss1",
+          "libxtst6",
+          "xdg-utils",
+          "libatspi2.0-0",
+          "libuuid1",
+          "libsecret-1-0"
+        ]
+      }
+    }
+  },
+  "plugins": {}
+}

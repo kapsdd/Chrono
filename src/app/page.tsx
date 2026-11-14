@@ -24,11 +24,10 @@ import { NotesView } from "@/components/NotesView";
 import { Reminders } from "@/components/Reminders";
 import { CommandPalette } from "@/components/CommandPalette";
 import { UpdateBanner } from "@/components/UpdateBanner";
-import { buildTree } from "@/lib/tree";
+import { useTaskTree, useKanbanColumns } from "@/lib/hooks";
 import { useChronoStore, type ViewId } from "@/store/useChronoStore";
 import { useSession } from "@/store/useSession";
 import { ACHIEVEMENT_THEMES, useUI, THEMES } from "@/store/useUI";
-import { normalizeKanbanColumns } from "@/lib/kanban";
 import type { KanbanColumn, Priority, ProjectView } from "@/lib/types";
 
 const VIEW_META: Record<Exclude<ViewId, "project">, { title: string; icon: IconName }> = {
@@ -138,7 +137,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, activeView, activeProjectId, q]);
 
-  const tree = useMemo(() => buildTree(activeTasks), [activeTasks]);
+  const tree = useTaskTree(activeTasks);
 
   const activeProject =
     activeView === "project" ? projects.find((p) => p.id === activeProjectId) : undefined;
@@ -163,7 +162,10 @@ export default function Home() {
     <AppShell>
       {/* always-available window chrome for intro / auth screens */}
       {!showApp && (
-        <div className="drag-region absolute right-0 top-0 z-[60] flex h-12 items-center pr-2">
+        <div
+          data-tauri-drag-region
+          className="drag-region absolute right-0 top-0 z-[60] flex h-12 items-center pr-2"
+        >
           <WindowControls />
         </div>
       )}
@@ -448,7 +450,7 @@ function KanbanSettings({ projectId }: { projectId: string }) {
   const setKanbanColumn = useChronoStore((s) => s.setKanbanColumn);
   const resetKanbanColumns = useChronoStore((s) => s.resetKanbanColumns);
   const [open, setOpen] = useState(false);
-  const columns = normalizeKanbanColumns(project?.kanbanColumns);
+  const columns = useKanbanColumns(project?.kanbanColumns);
 
   // Suggested color palette — faster than picking with the OS picker every time.
   const PALETTE = [

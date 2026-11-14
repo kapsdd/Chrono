@@ -11,12 +11,12 @@ import type {
   Role,
   Task,
 } from "@/lib/types";
-import { parseInput } from "@/lib/parseInput";
+import { parseInput, normalizeKanbanColumns } from "@/lib/core";
 import { repo } from "@/lib/repo";
 import { writeCache, readCache } from "@/lib/sync";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { DEFAULT_KANBAN_COLUMNS, normalizeKanbanColumns } from "@/lib/kanban";
+import { DEFAULT_KANBAN_COLUMNS } from "@/lib/kanban";
 import {
   ref,
   onValue,
@@ -162,7 +162,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     const cache = () => {
       if (!ownerId) return;
       const { tasks, projects, friends } = get();
-      writeCache(ownerId, { tasks, projects, notes: [], friends });
+      void writeCache(ownerId, { tasks, projects, notes: [], friends });
     };
 
   const saveProject = (p: Project) => {
@@ -191,12 +191,12 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       set({ tasks: [], projects: [], friends: [], ready: true });
       return;
     }
-    const cached = readCache(id);
+    const cached = await readCache(id);
     if (cached) set({ ...cached, ready: true });
     try {
       const snap = await repo.fetchAll(id);
       set({ ...snap, ready: true });
-      writeCache(id, snap);
+      await writeCache(id, snap);
       const newIds = new Set(snap.projects.map((p) => p.id));
       const changed = newIds.size !== knownProjectIds.size || [...newIds].some((id) => !knownProjectIds.has(id));
       knownProjectIds = newIds;
@@ -244,7 +244,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     }
   };
 
-  const findOrCreateProjectByName = (name: string): string | null => {
+  const findOrCreateProjectByName = async (name: string): Promise<string | null> => {
     const trimmed = name.trim();
     if (!trimmed) return null;
     const existing = get().projects.find(
@@ -258,7 +258,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
       name: trimmed,
       shareId: uid(),
       color,
-      kanbanColumns: normalizeKanbanColumns(),
+      kanbanColumns: await normalizeKanbanColumns(),
       createdAt: nowIso(),
     };
     set((s) => ({ projects: [...s.projects, project] }));
@@ -330,7 +330,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     createProject: async (name) => {
-      const id = findOrCreateProjectByName(name);
+      const id = await findOrCreateProjectByName(name);
       if (!id) return null;
       return get().projects.find((p) => p.id === id) ?? null;
     },
@@ -383,14 +383,16 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     },
 
     addFromInput: async (raw, parentId = null) => {
-      const parsed = parseInput(raw);
+      const parsed = await parseInput(raw);
       if (!parsed.title) return;
 
       let projectId: ViewFilter = get().activeProjectId;
       if (parentId) {
         projectId = get().tasks.find((t) => t.id === parentId)?.projectId ?? projectId;
       }
-      if (parsed.project) projectId = findOrCreateProjectByName(parsed.project);
+      if (parsed.project) {
+        projectId = await findOrCreateProjectByName(parsed.project);
+      }
 
       const minOrder = get().tasks.reduce((m, t) => Math.min(m, t.order ?? 0), 0);
       const task: Task = {
@@ -528,12 +530,17 @@ export const useChronoStore = create<ChronoState>((set, get) => {
 
     setKanbanColumn: (projectId, priority, label, color) => {
       const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : "#64748b";
-      patchProject(projectId, (p) => ({
-        ...p,
-        kanbanColumns: normalizeKanbanColumns(p.kanbanColumns).map((c) =>
-          c.priority === priority ? { ...c, label: label.trim() || c.label, color: safeColor } : c,
-        ),
-      }));
+      const current = get().projects.find((x) => x.id === projectId);
+      if (!current) return;
+      void (async () => {
+        const cols = await normalizeKanbanColumns(current.kanbanColumns);
+        const kanbanColumns = cols.map((c) =>
+          c.priority === priority
+            ? { ...c, label: label.trim() || c.label, color: safeColor }
+            : c,
+        );
+        patchProject(projectId, (p) => ({ ...p, kanbanColumns }));
+      })();
     },
 
     resetKanbanColumns: (projectId) => {
@@ -720,7 +727,7 @@ export const useChronoStore = create<ChronoState>((set, get) => {
     resetLocal: async () => {
       if (ownerId) {
         const { clearCache } = await import("@/lib/sync");
-        clearCache(ownerId);
+        await clearCache(ownerId);
       }
       set({ tasks: [], projects: [], friends: [], ready: false });
       await reload();

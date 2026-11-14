@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "./icons";
 
-const CURRENT_VERSION = "3.2.1";
-const VERSION_URL = "https://raw.githubusercontent.com/chrono-app/latest/main/version.json";
-const RELEASE_URL = "https://github.com/chrono-app/releases/latest";
+const CURRENT_VERSION = "4.0.0";
+const VERSION_URL =
+  "https://raw.githubusercontent.com/kapsdd/Chrono/main/version.json";
+const RELEASE_URL = "https://github.com/kapsdd/Chrono/releases/latest";
 
 interface VersionInfo {
   version: string;

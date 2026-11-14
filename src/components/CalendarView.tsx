@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Task } from "@/lib/types";
-import { downloadICS } from "@/lib/ics";
+import { downloadICS } from "@/lib/core";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const MONTHS = [
@@ -76,7 +76,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           </button>
         </div>
         <button
-          onClick={() => downloadICS(tasks)}
+          onClick={() => void downloadICS(tasks)}
           title="Экспортировать в календарь (.ics)"
           className="ml-auto rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-1.5 text-[12.5px] text-violet-100 transition-colors hover:bg-violet-500/20"
         >

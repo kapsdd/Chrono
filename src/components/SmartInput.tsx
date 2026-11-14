@@ -1,17 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { parseInput } from "@/lib/parseInput";
+import { parseInput } from "@/lib/core";
+import type { ParsedInput } from "@/lib/types";
 import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
 import { PriorityDots } from "./TaskMeta";
 
+const EMPTY: ParsedInput = { title: "", project: null, tags: [], priority: 0 };
+
 export function SmartInput() {
   const [value, setValue] = useState("");
+  const [parsed, setParsed] = useState<ParsedInput>(EMPTY);
   const addFromInput = useChronoStore((s) => s.addFromInput);
 
-  const parsed = useMemo(() => parseInput(value), [value]);
+  useEffect(() => {
+    let alive = true;
+    if (!value) {
+      setParsed(EMPTY);
+      return;
+    }
+    void parseInput(value).then((r) => {
+      if (alive) setParsed(r);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [value]);
   const showPreview =
     value.trim().length > 0 &&
     (!!parsed.project || parsed.tags.length > 0 || parsed.priority > 0);

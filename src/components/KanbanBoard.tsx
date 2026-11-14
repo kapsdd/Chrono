@@ -6,7 +6,7 @@ import clsx from "clsx";
 import type { KanbanColumn, Priority, Task } from "@/lib/types";
 import { SPRING } from "@/lib/motion";
 import { useChronoStore } from "@/store/useChronoStore";
-import { normalizeKanbanColumns } from "@/lib/kanban";
+import { useKanbanColumns } from "@/lib/hooks";
 import { TagChip } from "./TaskMeta";
 import { NoteControl, TimeBadge } from "./TaskExtras";
 
@@ -25,6 +25,7 @@ export function KanbanBoard({
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Priority | null>(null);
+  const boardColumns = useKanbanColumns(columns);
 
   const colItems = (p: Priority) =>
     tasks.filter((t) => (t.priority ?? 0) === p && !t.isCompleted).sort((a, b) => ord(a) - ord(b));
@@ -58,7 +59,7 @@ export function KanbanBoard({
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-3">
-      {normalizeKanbanColumns(columns).map((col) => {
+      {boardColumns.map((col) => {
         const items = colItems(col.priority);
         const isOver = overCol === col.priority;
         return (

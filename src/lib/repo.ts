@@ -14,7 +14,11 @@ import {
   equalTo,
 } from "firebase/database";
 import { db } from "@/lib/firebase";
-import { normalizeKanbanColumns } from "@/lib/kanban";
+import {
+  hashPassword,
+  normalizeKanbanColumns,
+  verifyPassword,
+} from "@/lib/core";
 
 // Firebase Realtime Database paths:
 //   users/{uid}/projects/{projectId}  — personal + owned shared projects
@@ -36,7 +40,7 @@ const sharedMeta = (pid: string) => `shared/${pid}/meta`;
 const joinCodes = () => "joinCodes";
 
 // ---- project serialization -------------------------------------------------
-function projectToDB(p: Project, ownerId: string) {
+async function projectToDB(p: Project, ownerId: string) {
   return {
     id: p.id,
     owner_id: p.ownerId ?? ownerId,
@@ -46,14 +50,14 @@ function projectToDB(p: Project, ownerId: string) {
     shared: p.shared ?? false,
     collaborators: p.collaborators ?? [],
     view: p.view ?? "list",
-    kanban_columns: normalizeKanbanColumns(p.kanbanColumns),
+    kanban_columns: await normalizeKanbanColumns(p.kanbanColumns),
     published: p.published ?? false,
     join_code: p.joinCode ?? null,
     created_at: p.createdAt,
   };
 }
 
-function dbToProject(r: Record<string, unknown>): Project {
+async function dbToProject(r: Record<string, unknown>): Promise<Project> {
   return {
     id: r.id as string,
     ownerId: (r.owner_id as string) ?? undefined,
@@ -63,7 +67,9 @@ function dbToProject(r: Record<string, unknown>): Project {
     shared: (r.shared as boolean) ?? false,
     collaborators: (r.collaborators as Project["collaborators"]) ?? [],
     view: (r.view as Project["view"]) ?? "list",
-    kanbanColumns: normalizeKanbanColumns(r.kanban_columns as Project["kanbanColumns"]),
+    kanbanColumns: await normalizeKanbanColumns(
+      r.kanban_columns as Project["kanbanColumns"],
+    ),
     published: Boolean(r.published || r.join_code),
     joinCode: (r.join_code as string) ?? null,
     createdAt: (r.created_at as string) ?? new Date().toISOString(),
@@ -161,12 +167,12 @@ function dbToNote(r: Record<string, unknown>): Note {
 // ---- helpers ---------------------------------------------------------------
 async function getSnapshot<T>(
   path: string,
-  mapper: (r: Record<string, unknown>) => T,
+  mapper: (r: Record<string, unknown>) => Promise<T> | T,
 ): Promise<T[]> {
   const snap = await get(ref(db, path));
   if (!snap.exists()) return [];
   const val = snap.val() as Record<string, Record<string, unknown>>;
-  return Object.values(val).map(mapper);
+  return Promise.all(Object.values(val).map((r) => mapper(r)));
 }
 
 async function getSharedProjectIds(uid: string): Promise<string[]> {
@@ -217,7 +223,9 @@ export const repo = {
     for (const { pid, metaSnap, tasksSnap } of sharedResults) {
       if (metaSnap.exists()) {
         const meta = metaSnap.val() as Record<string, unknown>;
-        sharedProjects.push(dbToProject({ ...meta, id: pid, shared: true }));
+        sharedProjects.push(
+          await dbToProject({ ...meta, id: pid, shared: true }),
+        );
       }
       sharedTasksAll.push(...tasksSnap);
     }
@@ -241,7 +249,7 @@ export const repo = {
     if (!p.name?.trim()) return;
     await set(
       ref(db, `${userProjects(ownerId)}/${p.id}`),
-      projectToDB(p, ownerId),
+      await projectToDB(p, ownerId),
     );
     if (p.published && p.joinCode) {
       const metaSnap = await get(ref(db, sharedMeta(p.id)));
@@ -250,7 +258,7 @@ export const repo = {
           name: p.name,
           color: p.color ?? null,
           view: p.view ?? "list",
-          kanban_columns: normalizeKanbanColumns(p.kanbanColumns),
+          kanban_columns: await normalizeKanbanColumns(p.kanbanColumns),
         });
       }
     }
@@ -340,7 +348,7 @@ export const repo = {
       owner_id: ownerId,
       shared: true,
       view: project.view ?? "list",
-      kanban_columns: normalizeKanbanColumns(project.kanbanColumns),
+      kanban_columns: await normalizeKanbanColumns(project.kanbanColumns),
       created_at: project.createdAt,
     });
     await set(ref(db, `${sharedMembers(projectId)}/${ownerId}`), {
@@ -406,19 +414,3 @@ export const repo = {
     await update(ref(db, `${sharedMembers(projectId)}/${userId}`), { role });
   },
 };
-
-// ---- password hashing (Web Crypto API) ------------------------------------
-async function hashPassword(password: string): Promise<string> {
-  const encoded = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  const hashArray = new Uint8Array(hashBuffer);
-  return Array.from(hashArray).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const encoded = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  const hashArray = new Uint8Array(hashBuffer);
-  const hashHex = Array.from(hashArray).map((b) => b.toString(16).padStart(2, "0")).join("");
-  return hashHex === stored;
-}
