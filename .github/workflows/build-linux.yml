@@ -87,6 +87,9 @@ jobs:
 
       - name: Create APT repository
         run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev apt-utils
+
           mkdir -p apt-repo/pool/main
           mkdir -p apt-repo/dists/stable/main/binary-amd64
           mkdir -p apt-repo/dists/stable/main/binary-arm64
